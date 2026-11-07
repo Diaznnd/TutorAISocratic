@@ -1,8 +1,12 @@
 import { Router } from 'express';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { z } from 'zod';
 import { prisma } from '../db.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
+import { handleUpload } from '../middleware/upload.js';
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const r = Router();
 r.use(requireAuth);
 
@@ -15,8 +19,7 @@ async function canAccessClass(user, classId) {
   }));
 }
 
-// Dosen menambah materi (teks). Dipecah per paragraf agar sorotan stabil.
-// Catatan: unggah PDF belum ada; konversi PDF -> teks bisa ditambahkan di sini.
+// Dosen menambah materi teks (dipecah per paragraf) + opsional simpan URL PDF terpisah
 r.post('/classes/:classId/materials', requireRole('dosen'), async (req, res) => {
   const classId = Number(req.params.classId);
   if (!Number.isInteger(classId) || classId <= 0) return res.status(400).json({ error: 'ID kelas tidak valid' });
@@ -26,23 +29,47 @@ r.post('/classes/:classId/materials', requireRole('dosen'), async (req, res) => 
     .object({
       title: z.string().trim().min(2).max(200),
       content: z.string().trim().min(10).max(100000),
+      pdfUrl: z.string().url().optional().nullable(),
+      pdfName: z.string().trim().max(200).optional().nullable(),
     })
     .safeParse(req.body);
   if (!p.success) return res.status(400).json({ error: 'Judul (2-200 karakter) dan isi materi (10-100.000 karakter) wajib diisi' });
 
   const parts = p.data.content.split(/\n\s*\n/).map((s) => s.trim()).filter(Boolean);
-  if (parts.length > 250) {
-    return res.status(400).json({ error: 'Materi terlalu panjang (maksimal 250 paragraf)' });
-  }
+  if (parts.length > 250) return res.status(400).json({ error: 'Materi terlalu panjang (maksimal 250 paragraf)' });
 
   const material = await prisma.material.create({
     data: {
       classId,
       title: p.data.title,
+      pdfUrl: p.data.pdfUrl ?? null,
+      pdfName: p.data.pdfName ?? null,
       paragraphs: { create: parts.map((text, index) => ({ index, text })) },
     },
   });
   res.status(201).json(material);
+});
+
+// Upload PDF untuk materi — multipart/form-data, field "file"
+// Mengembalikan { url, name } untuk dipakai di POST materi di atas
+r.post('/classes/:classId/materials/upload-pdf', requireRole('dosen'), handleUpload, async (req, res) => {
+  const classId = Number(req.params.classId);
+  if (!Number.isInteger(classId) || classId <= 0) return res.status(400).json({ error: 'ID kelas tidak valid' });
+  if (!(await canAccessClass(req.user, classId))) return res.status(403).json({ error: 'Akses ditolak' });
+  if (!req.file) return res.status(400).json({ error: 'File PDF tidak ditemukan' });
+
+  const url = `/uploads/${req.file.filename}`;
+  res.json({ url, name: req.file.originalname, size: req.file.size });
+});
+
+// Upload PDF untuk submission mahasiswa
+r.post('/classes/:classId/assignments/:assignmentId/upload-pdf', requireRole('mahasiswa'), handleUpload, async (req, res) => {
+  const classId = Number(req.params.classId);
+  if (!(await canAccessClass(req.user, classId))) return res.status(403).json({ error: 'Akses ditolak' });
+  if (!req.file) return res.status(400).json({ error: 'File PDF tidak ditemukan' });
+
+  const url = `/uploads/${req.file.filename}`;
+  res.json({ url, name: req.file.originalname, size: req.file.size });
 });
 
 r.get('/materials/:id', async (req, res) => {
@@ -56,7 +83,6 @@ r.get('/materials/:id', async (req, res) => {
   if (!material || !(await canAccessClass(req.user, material.classId)))
     return res.status(404).json({ error: 'Materi tidak ditemukan' });
 
-  // Dosen: jumlah mahasiswa berbeda yang menyorot tiap paragraf (peta panas, agregat tanpa nama)
   if (req.user.role === 'dosen') {
     const hs = await prisma.highlight.findMany({
       where: { paragraph: { materialId: id } },
@@ -64,9 +90,7 @@ r.get('/materials/:id', async (req, res) => {
       distinct: ['paragraphId', 'userId'],
     });
     const counts = new Map();
-    for (const h of hs) {
-      counts.set(h.paragraphId, (counts.get(h.paragraphId) || 0) + 1);
-    }
+    for (const h of hs) counts.set(h.paragraphId, (counts.get(h.paragraphId) || 0) + 1);
     material.paragraphs = material.paragraphs.map((p) => ({ ...p, students: counts.get(p.id) || 0 }));
   }
   res.json(material);

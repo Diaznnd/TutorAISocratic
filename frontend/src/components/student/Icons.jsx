@@ -115,3 +115,33 @@ export const LayersIcon = (p) => (
     <path d="m4 16.4 8 4.3 8-4.3" />
   </Svg>
 );
+
+export const ClipboardIcon = (p) => (
+  <Svg {...p}>
+    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+    <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+    <path d="M9 12h6M9 16h4" />
+  </Svg>
+);
+
+export const LinkIcon = (p) => (
+  <Svg {...p}>
+    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+  </Svg>
+);
+
+export const UploadIcon = (p) => (
+  <Svg {...p}>
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+    <polyline points="17 8 12 3 7 8" />
+    <line x1="12" y1="3" x2="12" y2="15" />
+  </Svg>
+);
+
+export const XIcon = (p) => (
+  <Svg {...p}>
+    <line x1="18" y1="6" x2="6" y2="18" />
+    <line x1="6" y1="6" x2="18" y2="18" />
+  </Svg>
+);

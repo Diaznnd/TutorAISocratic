@@ -4,6 +4,8 @@ import Landing from './pages/Landing.jsx';
 import Login from './pages/Login.jsx';
 import Home from './pages/Home.jsx';
 import StudentHome from './pages/StudentHome.jsx';
+import ClassDetail from './pages/ClassDetail.jsx';
+import ClassManage from './pages/ClassManage.jsx';
 import Material from './pages/Material.jsx';
 
 /* ─── Top Navbar for Authenticated Pages (/app, /materi/:id) ─── */
@@ -70,6 +72,13 @@ function ProtectedLayout({ children }) {
   );
 }
 
+/* ─── Guard tanpa AppNav (untuk halaman yang punya layout sendiri) ─── */
+function AppGuard({ children }) {
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/login" replace />;
+  return children;
+}
+
 /* ─── Halaman /app: pelajar memakai dashboard baru, dosen tetap halaman kelola ─── */
 function AppHome() {
   const { user } = useAuth();
@@ -107,6 +116,18 @@ export default function App() {
             <Material />
           </ProtectedLayout>
         }
+      />
+
+      {/* 5. Detail kelas mahasiswa */}
+      <Route
+        path="/kelas/:id"
+        element={<AppGuard><ClassDetail /></AppGuard>}
+      />
+
+      {/* 6. Kelola kelas (dosen) */}
+      <Route
+        path="/kelola/:id"
+        element={<AppGuard><ClassManage /></AppGuard>}
       />
 
       {/* Fallback */}

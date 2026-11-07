@@ -1,6 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { api } from '../../api.js';
 import { useAuth } from '../../auth.jsx';
-import { BellIcon, ChevronDownIcon, ClockIcon, LogOutIcon, SearchIcon } from './Icons.jsx';
+import { BellIcon, ChevronDownIcon, ClockIcon, LogOutIcon, SearchIcon, XIcon } from './Icons.jsx';
 
 function initials(name = '') {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -9,19 +11,66 @@ function initials(name = '') {
   return (parts[0][0] + parts[1][0]).toUpperCase();
 }
 
+function fmtAgo(iso) {
+  if (!iso) return '';
+  const diff = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return 'Baru saja';
+  if (m < 60) return `${m} menit lalu`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h} jam lalu`;
+  return `${Math.floor(h / 24)} hari lalu`;
+}
+
 /* Topbar area pelajar: pencarian, riwayat, notifikasi, dan menu profil. */
 export default function StudentTopbar({ query = '', onQueryChange }) {
   const { user, logout } = useAuth();
   const [openMenu, setOpenMenu] = useState(false);
+  const [openNotif, setOpenNotif] = useState(false);
+  const [notifs, setNotifs] = useState([]);
+  const [notifLoading, setNotifLoading] = useState(false);
   const menuRef = useRef(null);
+  const notifRef = useRef(null);
 
+  // Hitung jumlah notifikasi yang belum dibaca (berdasarkan lastSeenNotif di localStorage)
+  const lastSeen = Number(localStorage.getItem('lastSeenNotif') || 0);
+  const unreadCount = notifs.filter((n) => new Date(n.createdAt).getTime() > lastSeen).length;
+
+  const fetchNotifs = useCallback(async () => {
+    setNotifLoading(true);
+    try {
+      const data = await api('/classes/mine/notifications');
+      setNotifs(Array.isArray(data) ? data : []);
+    } catch {
+      // silent fail
+    } finally {
+      setNotifLoading(false);
+    }
+  }, []);
+
+  const toggleNotif = () => {
+    if (!openNotif) {
+      fetchNotifs();
+      setOpenNotif(true);
+    } else {
+      // Tandai semua sudah dibaca
+      localStorage.setItem('lastSeenNotif', String(Date.now()));
+      setOpenNotif(false);
+    }
+  };
+
+  // Click outside untuk menutup dropdown profil dan notif
   useEffect(() => {
-    if (!openMenu) return;
+    if (!openMenu && !openNotif) return;
     const onDown = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target)) setOpenMenu(false);
+      if (notifRef.current && !notifRef.current.contains(e.target)) {
+        localStorage.setItem('lastSeenNotif', String(Date.now()));
+        setOpenNotif(false);
+      }
     };
     const onKey = (e) => {
-      if (e.key === 'Escape') setOpenMenu(false);
+      if (e.key === 'Escape') { setOpenMenu(false); setOpenNotif(false); }
     };
     document.addEventListener('mousedown', onDown);
     document.addEventListener('keydown', onKey);
@@ -29,7 +78,10 @@ export default function StudentTopbar({ query = '', onQueryChange }) {
       document.removeEventListener('mousedown', onDown);
       document.removeEventListener('keydown', onKey);
     };
-  }, [openMenu]);
+  }, [openMenu, openNotif]);
+
+  // Fetch notifikasi saat mount untuk hitung badge
+  useEffect(() => { fetchNotifs(); }, [fetchNotifs]);
 
   return (
     <header className="sticky top-0 z-30 border-b border-[#F1EEF4] bg-white/95 px-4 py-3.5 backdrop-blur-md sm:px-6 lg:px-8">
@@ -57,15 +109,104 @@ export default function StudentTopbar({ query = '', onQueryChange }) {
             <ClockIcon size={18} />
           </button>
 
-          <button
-            type="button"
-            title="Notifikasi"
-            aria-label="Notifikasi"
-            className="relative flex h-9 w-9 items-center justify-center rounded-full text-[#8B8391] transition hover:bg-[#FBF7F4] hover:text-[#6B1224] cursor-pointer"
-          >
-            <BellIcon size={18} />
-            <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-[#D05A6E] ring-2 ring-white" />
-          </button>
+          {/* ── Notifikasi ── */}
+          <div className="relative" ref={notifRef}>
+            <button
+              type="button"
+              onClick={toggleNotif}
+              aria-expanded={openNotif}
+              aria-label="Notifikasi"
+              className="relative flex h-9 w-9 items-center justify-center rounded-full text-[#8B8391] transition hover:bg-[#FBF7F4] hover:text-[#6B1224] cursor-pointer"
+            >
+              <BellIcon size={18} />
+              {unreadCount > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#D05A6E] text-[9px] font-extrabold text-white ring-2 ring-white">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+              {unreadCount === 0 && (
+                <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-[#D05A6E] ring-2 ring-white" />
+              )}
+            </button>
+
+            {openNotif && (
+              <div
+                role="dialog"
+                aria-label="Panel notifikasi"
+                className="absolute right-0 top-full z-50 mt-2 w-80 rounded-2xl border border-[#F1EEF4] bg-white shadow-[0_24px_48px_-28px_rgba(30,28,30,0.45)] overflow-hidden"
+              >
+                {/* Header notifikasi */}
+                <div className="flex items-center justify-between border-b border-[#F5F4F7] px-4 py-3">
+                  <p className="text-[13px] font-extrabold text-[#1E1C1E]">Notifikasi</p>
+                  <button
+                    type="button"
+                    onClick={() => { localStorage.setItem('lastSeenNotif', String(Date.now())); setOpenNotif(false); }}
+                    className="flex h-7 w-7 items-center justify-center rounded-full text-[#A79FAB] hover:bg-[#F5F4F7] hover:text-[#6B1224] cursor-pointer transition"
+                    aria-label="Tutup"
+                  >
+                    <XIcon size={14} />
+                  </button>
+                </div>
+
+                {/* Isi */}
+                <div className="max-h-[320px] overflow-y-auto">
+                  {notifLoading ? (
+                    <div className="space-y-2 p-3">
+                      {[0, 1, 2].map((k) => (
+                        <div key={k} className="h-14 animate-pulse rounded-xl bg-[#F5F4F7]" />
+                      ))}
+                    </div>
+                  ) : notifs.length === 0 ? (
+                    <div className="px-4 py-10 text-center">
+                      <p className="text-[13px] font-bold text-[#1E1C1E]">Tidak ada notifikasi</p>
+                      <p className="mt-1 text-[11px] text-[#A79FAB]">Semua tugas dan materi terbaru akan muncul di sini.</p>
+                    </div>
+                  ) : (
+                    <ul className="divide-y divide-[#F5F4F7]">
+                      {notifs.map((n, i) => {
+                        const isNew = new Date(n.createdAt).getTime() > lastSeen;
+                        return (
+                          <li key={i}>
+                            <Link
+                              to={`/kelas/${n.classId}`}
+                              onClick={() => { localStorage.setItem('lastSeenNotif', String(Date.now())); setOpenNotif(false); }}
+                              className={[
+                                'flex items-start gap-3 px-4 py-3 no-underline transition hover:bg-[#FBF7F4]',
+                                isNew ? 'bg-[#FDF2F4]' : '',
+                              ].join(' ')}
+                            >
+                              <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#F9E8EC] text-[14px]">
+                                📋
+                              </span>
+                              <div className="min-w-0 flex-1">
+                                <p className="text-[12px] font-bold text-[#1E1C1E] leading-tight">{n.title}</p>
+                                <p className="mt-0.5 text-[11px] text-[#6C6267] leading-tight truncate">{n.body}</p>
+                                <p className="mt-1 text-[10px] font-semibold text-[#A79FAB]">{fmtAgo(n.createdAt)}</p>
+                              </div>
+                              {isNew && (
+                                <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#D05A6E]" />
+                              )}
+                            </Link>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </div>
+
+                {/* Footer */}
+                <div className="border-t border-[#F5F4F7] px-4 py-2.5">
+                  <Link
+                    to="/tugas"
+                    onClick={() => setOpenNotif(false)}
+                    className="block text-center text-[11px] font-bold text-[#6B1224] hover:underline no-underline"
+                  >
+                    Lihat semua tugas →
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Profil */}
           <div className="relative" ref={menuRef}>
