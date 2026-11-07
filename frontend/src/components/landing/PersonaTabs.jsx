@@ -11,7 +11,7 @@ export default function PersonaTabs() {
           <span className="text-xs font-bold uppercase tracking-wider text-[#D05A6E] bg-[#F9E8EC] px-3 py-1 rounded-full">
             Dua Perspektif
           </span>
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-[#1E1C1E] font-['Syne',sans-serif] mt-3 mb-3">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-[#1E1C1E] font-['Plus_Jakarta_Sans',sans-serif] mt-3 mb-3">
             Dirancang untuk Mahasiswa & Pendidik
           </h2>
           <p className="text-sm sm:text-base text-[#6C6267]">
@@ -54,7 +54,7 @@ export default function PersonaTabs() {
               <span className="text-xs font-bold text-[#D05A6E] tracking-wider uppercase">
                 Pengalaman Belajar Mahasiswa
               </span>
-              <h3 className="text-xl sm:text-2xl font-bold text-[#1E1C1E] font-['Syne',sans-serif] mt-1 mb-4">
+              <h3 className="text-xl sm:text-2xl font-bold text-[#1E1C1E] font-['Plus_Jakarta_Sans',sans-serif] mt-1 mb-4">
                 Belajar Kapan Saja Tanpa Rasa Takut Dinilai
               </h3>
               <p className="text-xs sm:text-sm text-[#6C6267] leading-relaxed mb-6">
@@ -109,7 +109,7 @@ export default function PersonaTabs() {
               <span className="text-xs font-bold text-[#D05A6E] tracking-wider uppercase">
                 Alat Bantu Dosen & Instruktur
               </span>
-              <h3 className="text-xl sm:text-2xl font-bold text-[#1E1C1E] font-['Syne',sans-serif] mt-1 mb-4">
+              <h3 className="text-xl sm:text-2xl font-bold text-[#1E1C1E] font-['Plus_Jakarta_Sans',sans-serif] mt-1 mb-4">
                 Peta Visual Titik Bingung Kelas secara Real-time
               </h3>
               <p className="text-xs sm:text-sm text-[#6C6267] leading-relaxed mb-6">

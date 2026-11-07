@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { api, streamTutor } from '../api';
 import { useAuth } from '../auth.jsx';
+import { markMaterialRead } from '../progress';
 
 export default function Material() {
   const { id } = useParams();
@@ -15,6 +16,7 @@ export default function Material() {
   const endRef = useRef(null);
 
   useEffect(() => {
+    markMaterialRead(id); // catat progres baca untuk dashboard pelajar (localStorage)
     api(`/materials/${id}`).then(setM).catch((e) => setErr(e.message));
   }, [id]);
 
@@ -132,7 +134,7 @@ export default function Material() {
               Bahan Ajar Perkuliahan
             </span>
 
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1E1C1E] font-['Syne',sans-serif] mb-3 leading-tight">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1E1C1E] font-['Plus_Jakarta_Sans',sans-serif] mb-3 leading-tight">
               {m.title}
             </h1>
 
@@ -208,7 +210,7 @@ export default function Material() {
                     SP
                   </div>
                   <div>
-                    <span className="font-bold text-xs text-[#1E1C1E] font-['Syne',sans-serif] block">
+                    <span className="font-bold text-xs text-[#1E1C1E] font-['Plus_Jakarta_Sans',sans-serif] block">
                       Tutor AI Socratic
                     </span>
                     <span className="text-[10px] font-semibold text-[#D05A6E] block">

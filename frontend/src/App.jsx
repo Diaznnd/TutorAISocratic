@@ -3,6 +3,7 @@ import { useAuth } from './auth.jsx';
 import Landing from './pages/Landing.jsx';
 import Login from './pages/Login.jsx';
 import Home from './pages/Home.jsx';
+import StudentHome from './pages/StudentHome.jsx';
 import Material from './pages/Material.jsx';
 
 /* ─── Top Navbar for Authenticated Pages (/app, /materi/:id) ─── */
@@ -17,7 +18,7 @@ function AppNav() {
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#80142A] to-[#6B1224] text-white flex items-center justify-center font-extrabold text-xs tracking-wider shadow-sm group-hover:scale-105 transition-transform">
               SP
             </div>
-            <span className="font-extrabold text-base tracking-tight text-[#6B1224] font-['Syne',sans-serif]">
+            <span className="font-extrabold text-base tracking-tight text-[#6B1224] font-['Plus_Jakarta_Sans',sans-serif]">
               SorotPaham
             </span>
           </Link>
@@ -69,6 +70,14 @@ function ProtectedLayout({ children }) {
   );
 }
 
+/* ─── Halaman /app: pelajar memakai dashboard baru, dosen tetap halaman kelola ─── */
+function AppHome() {
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/login" replace />;
+  if (user.role === 'mahasiswa') return <StudentHome />;
+  return <ProtectedLayout><Home /></ProtectedLayout>;
+}
+
 /* ─── Root Router ─── */
 export default function App() {
   const { user } = useAuth();
@@ -87,11 +96,7 @@ export default function App() {
       {/* 3. Protected LMS Classes Dashboard */}
       <Route
         path="/app"
-        element={
-          <ProtectedLayout>
-            <Home />
-          </ProtectedLayout>
-        }
+        element={<AppHome />}
       />
 
       {/* 4. Protected Interactive Reading Space */}

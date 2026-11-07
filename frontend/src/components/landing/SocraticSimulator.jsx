@@ -63,7 +63,7 @@ export default function SocraticSimulator() {
           <span className="text-xs font-bold uppercase tracking-wider text-[#D05A6E] bg-[#F9E8EC] px-3 py-1 rounded-full">
             Playground Langsung
           </span>
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-[#1E1C1E] font-['Syne',sans-serif] mt-3 mb-3">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-[#1E1C1E] font-['Plus_Jakarta_Sans',sans-serif] mt-3 mb-3">
             Uji Coba Dialog Bimbingan Sokrates
           </h2>
           <p className="text-sm sm:text-base text-[#6C6267]">
@@ -97,7 +97,7 @@ export default function SocraticSimulator() {
                 SP
               </div>
               <div>
-                <span className="font-bold text-xs text-[#1E1C1E] block font-['Syne',sans-serif]">
+                <span className="font-bold text-xs text-[#1E1C1E] block font-['Plus_Jakarta_Sans',sans-serif]">
                   Tutor AI Socratic
                 </span>
                 <span className="text-[10px] text-[#6C6267] block">

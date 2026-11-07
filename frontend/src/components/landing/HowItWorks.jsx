@@ -33,7 +33,7 @@ export default function HowItWorks() {
           <span className="text-xs font-bold uppercase tracking-wider text-[#D05A6E] bg-[#F9E8EC] px-3 py-1 rounded-full">
             Alur Pembelajaran
           </span>
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-[#1E1C1E] font-['Syne',sans-serif] mt-3 mb-3">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-[#1E1C1E] font-['Plus_Jakarta_Sans',sans-serif] mt-3 mb-3">
             Hanya 4 Langkah Sederhana
           </h2>
           <p className="text-sm sm:text-base text-[#6C6267]">
@@ -54,7 +54,7 @@ export default function HowItWorks() {
                     STEP {s.num}
                   </span>
                 </div>
-                <h3 className="font-bold text-base text-[#1E1C1E] mb-2 font-['Syne',sans-serif]">
+                <h3 className="font-bold text-base text-[#1E1C1E] mb-2 font-['Plus_Jakarta_Sans',sans-serif]">
                   {s.title}
                 </h3>
                 <p className="text-xs sm:text-sm text-[#6C6267] leading-relaxed m-0">

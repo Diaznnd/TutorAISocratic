@@ -34,7 +34,7 @@ export default function Home() {
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-1">
             <span className="text-xl">{isDosen ? '📋' : '🎓'}</span>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-[#6B1224] font-['Syne',sans-serif] m-0">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-[#6B1224] font-['Plus_Jakarta_Sans',sans-serif] m-0">
               {isDosen ? 'Dashboard Kelas & Materi Dosen' : 'Kelas Pembelajaran Saya'}
             </h1>
           </div>
@@ -91,7 +91,7 @@ export default function Home() {
             <div className="w-14 h-14 rounded-2xl bg-[#F9E8EC] text-[#6B1224] flex items-center justify-center text-2xl mx-auto mb-3">
               📚
             </div>
-            <h3 className="font-bold text-base text-[#1E1C1E] font-['Syne',sans-serif] mb-1">
+            <h3 className="font-bold text-base text-[#1E1C1E] font-['Plus_Jakarta_Sans',sans-serif] mb-1">
               Belum Ada Kelas Terdaftar
             </h3>
             <p className="text-xs sm:text-sm text-[#6C6267] max-w-sm mx-auto">
@@ -116,7 +116,7 @@ export default function Home() {
                     {c.name.charAt(0).toUpperCase()}
                   </div>
                   <div>
-                    <h2 className="font-bold text-base text-[#1E1C1E] font-['Syne',sans-serif] m-0">
+                    <h2 className="font-bold text-base text-[#1E1C1E] font-['Plus_Jakarta_Sans',sans-serif] m-0">
                       {c.name}
                     </h2>
                     {isDosen && (

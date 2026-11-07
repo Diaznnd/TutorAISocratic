@@ -33,7 +33,7 @@ export default function FaqSection() {
           <span className="text-xs font-bold uppercase tracking-wider text-[#D05A6E] bg-[#F9E8EC] px-3 py-1 rounded-full">
             Tanya Jawab
           </span>
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-[#1E1C1E] font-['Syne',sans-serif] mt-3 mb-3">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-[#1E1C1E] font-['Plus_Jakarta_Sans',sans-serif] mt-3 mb-3">
             Pertanyaan yang Sering Diajukan
           </h2>
           <p className="text-sm sm:text-base text-[#6C6267]">
@@ -51,7 +51,7 @@ export default function FaqSection() {
                 onClick={() => setOpenFaq(openFaq === idx ? -1 : idx)}
                 className="w-full text-left px-6 py-4.5 flex items-center justify-between gap-4 cursor-pointer hover:bg-[#F9E8EC]/20 transition-colors"
               >
-                <span className="font-bold text-sm sm:text-base text-[#1E1C1E] font-['Syne',sans-serif]">
+                <span className="font-bold text-sm sm:text-base text-[#1E1C1E] font-['Plus_Jakarta_Sans',sans-serif]">
                   {f.q}
                 </span>
                 <span className="text-lg font-bold text-[#6B1224] flex-shrink-0">

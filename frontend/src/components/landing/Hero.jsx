@@ -15,7 +15,7 @@ export default function Hero() {
 
         {/* Headline */}
         <div className="text-center max-w-3xl mx-auto mb-8">
-          <h1 className="font-extrabold tracking-tight text-3xl sm:text-4xl md:text-5xl lg:text-[3.25rem] leading-[1.18] text-[#1E1C1E] font-['Syne',sans-serif] mb-5">
+          <h1 className="font-extrabold tracking-tight text-3xl sm:text-4xl md:text-5xl lg:text-[3.25rem] leading-[1.18] text-[#1E1C1E] font-['Plus_Jakarta_Sans',sans-serif] mb-5">
             Bukan memberi jawaban jadi.<br />
             <span className="text-[#6B1224] underline decoration-[#D05A6E]/40 decoration-wavy decoration-2">
               Menuntunmu hingga benar-benar paham.
@@ -76,7 +76,7 @@ export default function Hero() {
               <span className="text-[11px] font-bold uppercase tracking-wider text-[#D05A6E]">
                 Paragraf 3 dari 8
               </span>
-              <h3 className="font-bold text-base text-[#1E1C1E] mt-1 mb-3 font-['Syne',sans-serif]">
+              <h3 className="font-bold text-base text-[#1E1C1E] mt-1 mb-3 font-['Plus_Jakarta_Sans',sans-serif]">
                 Prinsip Terminasi pada Fungsi Rekursif
               </h3>
               <p className="text-xs sm:text-sm text-[#1E1C1E]/85 leading-relaxed mb-3">
@@ -129,15 +129,15 @@ export default function Hero() {
         {/* 3 Trust Metrics */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-8 max-w-3xl mx-auto">
           <div className="bg-white rounded-2xl p-4 text-center border border-[#F9E8EC] shadow-xs">
-            <div className="text-2xl font-extrabold text-[#6B1224] font-['Syne',sans-serif]">83%</div>
+            <div className="text-2xl font-extrabold text-[#6B1224] font-['Plus_Jakarta_Sans',sans-serif]">83%</div>
             <div className="text-xs text-[#6C6267] font-medium mt-0.5">Mahasiswa Mengaku Paham Lebih Mendalam</div>
           </div>
           <div className="bg-white rounded-2xl p-4 text-center border border-[#F9E8EC] shadow-xs">
-            <div className="text-2xl font-extrabold text-[#6B1224] font-['Syne',sans-serif]">5 Tangga</div>
+            <div className="text-2xl font-extrabold text-[#6B1224] font-['Plus_Jakarta_Sans',sans-serif]">5 Tangga</div>
             <div className="text-xs text-[#6C6267] font-medium mt-0.5">Tingkatan Petunjuk Bimbingan Berjenjang</div>
           </div>
           <div className="bg-white rounded-2xl p-4 text-center border border-[#F9E8EC] shadow-xs">
-            <div className="text-2xl font-extrabold text-[#6B1224] font-['Syne',sans-serif]">100% Privasi</div>
+            <div className="text-2xl font-extrabold text-[#6B1224] font-['Plus_Jakarta_Sans',sans-serif]">100% Privasi</div>
             <div className="text-xs text-[#6C6267] font-medium mt-0.5">Data Sorotan Agregat & Anonim Bagi Dosen</div>
           </div>
         </div>
