@@ -176,6 +176,7 @@ function RoleSelect({ onSelect }) {
 /* ─── Screen 2: Sign In / Sign Up Form ─── */
 function AuthForm({ role, onBack }) {
   const { login, register } = useAuth();
+  const navigate = useNavigate();
   const [mode, setMode] = useState('login');
   const [showPw, setShowPw] = useState(false);
   const [remember, setRemember] = useState(true);
@@ -210,6 +211,7 @@ function AuthForm({ role, onBack }) {
         }
         await register({ name: form.name.trim(), email, password: form.password, role });
       }
+      navigate('/app');
     } catch (e2) {
       setErr(e2.message || 'Gagal masuk. Periksa kembali email dan kata sandi.');
     } finally {

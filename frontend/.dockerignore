@@ -1,0 +1,19 @@
+
+# Dependencies lokal
+node_modules
+
+# Hasil build lokal — akan dibuat ulang di Docker
+dist
+
+# Git
+.git
+.gitignore
+
+# Environment lokal
+.env
+.env.*
+!.env.example
+
+# Debug files
+npm-debug.log*
+yarn-debug.log*
