@@ -1,0 +1,86 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int            @id @default(autoincrement())
+  name         String
+  email        String         @unique
+  passwordHash String
+  role         String // "dosen" | "mahasiswa"
+  createdAt    DateTime       @default(now())
+  classes      Class[]
+  enrollments  Enrollment[]
+  highlights   Highlight[]
+  sessions     TutorSession[]
+}
+
+model Class {
+  id          Int          @id @default(autoincrement())
+  name        String
+  code        String       @unique
+  ownerId     Int
+  owner       User         @relation(fields: [ownerId], references: [id])
+  enrollments Enrollment[]
+  materials   Material[]
+}
+
+model Enrollment {
+  id      Int   @id @default(autoincrement())
+  userId  Int
+  classId Int
+  user    User  @relation(fields: [userId], references: [id])
+  class   Class @relation(fields: [classId], references: [id])
+
+  @@unique([userId, classId])
+}
+
+model Material {
+  id         Int         @id @default(autoincrement())
+  classId    Int
+  title      String
+  createdAt  DateTime    @default(now())
+  class      Class       @relation(fields: [classId], references: [id])
+  paragraphs Paragraph[]
+}
+
+model Paragraph {
+  id         Int            @id @default(autoincrement())
+  materialId Int
+  index      Int
+  text       String
+  material   Material       @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  highlights Highlight[]
+  sessions   TutorSession[]
+
+  @@unique([materialId, index])
+}
+
+model Highlight {
+  id           Int       @id @default(autoincrement())
+  userId       Int
+  paragraphId  Int
+  selectedText String
+  note         String?
+  createdAt    DateTime  @default(now())
+  user         User      @relation(fields: [userId], references: [id])
+  paragraph    Paragraph @relation(fields: [paragraphId], references: [id], onDelete: Cascade)
+}
+
+model TutorSession {
+  id           Int       @id @default(autoincrement())
+  userId       Int
+  paragraphId  Int
+  selectedText String
+  hintLevel    Int       @default(1)
+  messages     String    @default("[]") // JSON: [{role, content}]
+  summary      String? // diisi analisis sesi (belum dibuat)
+  createdAt    DateTime  @default(now())
+  user         User      @relation(fields: [userId], references: [id])
+  paragraph    Paragraph @relation(fields: [paragraphId], references: [id], onDelete: Cascade)
+}
