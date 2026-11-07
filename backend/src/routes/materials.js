@@ -28,14 +28,20 @@ r.post('/classes/:classId/materials', requireRole('dosen'), async (req, res) => 
   const p = z
     .object({
       title: z.string().trim().min(2).max(200),
-      content: z.string().trim().min(10).max(100000),
-      pdfUrl: z.string().url().optional().nullable(),
+      content: z.string().trim().max(100000).optional().default(''),
+      pdfUrl: z.string().max(500).optional().nullable(),
       pdfName: z.string().trim().max(200).optional().nullable(),
     })
     .safeParse(req.body);
-  if (!p.success) return res.status(400).json({ error: 'Judul (2-200 karakter) dan isi materi (10-100.000 karakter) wajib diisi' });
+  if (!p.success) return res.status(400).json({ error: p.error.errors[0]?.message || 'Data tidak valid' });
 
-  const parts = p.data.content.split(/\n\s*\n/).map((s) => s.trim()).filter(Boolean);
+  const rawContent = p.data.content?.trim() || '';
+  if (!rawContent && !p.data.pdfUrl) {
+    return res.status(400).json({ error: 'Harap masukkan teks materi atau lampirkan file PDF materi' });
+  }
+
+  const effectiveContent = rawContent || `Materi perkuliahan "${p.data.title}" tersedia dalam dokumen PDF terlampir (${p.data.pdfName || 'Dokumen PDF'}). Silakan baca dan pelajari dokumen tersebut.`;
+  const parts = effectiveContent.split(/\n\s*\n/).map((s) => s.trim()).filter(Boolean);
   if (parts.length > 250) return res.status(400).json({ error: 'Materi terlalu panjang (maksimal 250 paragraf)' });
 
   const material = await prisma.material.create({
@@ -94,6 +100,20 @@ r.get('/materials/:id', async (req, res) => {
     material.paragraphs = material.paragraphs.map((p) => ({ ...p, students: counts.get(p.id) || 0 }));
   }
   res.json(material);
+});
+
+// Dosen menghapus materi
+r.delete('/materials/:id', requireRole('dosen'), async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ error: 'ID materi tidak valid' });
+
+  const material = await prisma.material.findUnique({ where: { id } });
+  if (!material || !(await canAccessClass(req.user, material.classId))) {
+    return res.status(404).json({ error: 'Materi tidak ditemukan' });
+  }
+
+  await prisma.material.delete({ where: { id } });
+  res.json({ ok: true });
 });
 
 export default r;

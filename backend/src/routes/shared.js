@@ -41,7 +41,7 @@ r.post('/', requireRole('dosen'), async (req, res) => {
   const p = z
     .object({
       title: z.string().trim().min(2).max(200),
-      fileUrl: z.string().url('URL tidak valid').max(2000),
+      fileUrl: z.string().min(1).max(2000),
       fileName: z.string().trim().min(1).max(200),
       fileType: z.string().trim().max(100).default('application/pdf'),
     })

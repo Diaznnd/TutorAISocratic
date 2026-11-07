@@ -62,6 +62,57 @@ function GradeBadge({ grade }) {
   return <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ${cls}`}>{grade}/100</span>;
 }
 
+/* ─── PDF Viewer modal ─── */
+function PdfViewer({ url, name, onClose }) {
+  const fileUrl = url?.startsWith('http') || url?.startsWith('/') ? url : `/${url}`;
+  return (
+    <div className="fixed inset-0 z-50 flex flex-col bg-[#1A1118]/85 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label={name}>
+      <div className="flex items-center justify-between border-b border-white/10 bg-[#1A1118] px-4 py-3 sm:px-6">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-red-600 text-xs font-bold text-white shrink-0">
+            PDF
+          </span>
+          <p className="truncate text-xs sm:text-[13px] font-bold text-white max-w-xs sm:max-w-md">{name}</p>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <a
+            href={fileUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            download
+            className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3.5 py-1.5 text-xs font-bold text-white hover:bg-white/20 transition cursor-pointer no-underline"
+          >
+            <span>Buka / Unduh</span> ↗
+          </a>
+          <button type="button" onClick={onClose}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white/70 hover:bg-white/10 hover:text-white cursor-pointer transition">
+            ✕
+          </button>
+        </div>
+      </div>
+      <div className="flex-1 overflow-hidden bg-[#2A2329]">
+        <iframe
+          src={`${fileUrl}#toolbar=1`}
+          title={name}
+          className="h-full w-full border-0"
+          loading="lazy"
+        />
+      </div>
+    </div>
+  );
+}
+
+function extractPdfFromDesc(text) {
+  if (!text) return null;
+  const m = text.match(/\[(?:Lampiran PDF:\s*)?([^\]]+)\]\(([^)]+\.pdf[^)]*)\)/i) ||
+            text.match(/(https?:\/\/[^\s]+\.pdf|\/uploads\/[^\s]+\.pdf)/i);
+  if (!m) return null;
+  if (m[2]) return { name: m[1], url: m[2] };
+  const rawUrl = m[1] || m[0];
+  const name = rawUrl.split('/').pop() || 'Dokumen.pdf';
+  return { name, url: rawUrl };
+}
+
 /* ─── Halaman utama ─── */
 export default function ClassManage() {
   const { id: classId } = useParams();
@@ -72,11 +123,14 @@ export default function ClassManage() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
   const [tab, setTab] = useState('tugas');
+  const [previewPdf, setPreviewPdf] = useState(null); // { url, name }
 
   /* Tugas state */
   const [assignments, setAssignments] = useState([]);
   const [showNewTask, setShowNewTask] = useState(false);
   const [taskForm, setTaskForm] = useState({ title: '', description: '', dueDate: '' });
+  const [taskPdfFile, setTaskPdfFile] = useState(null);
+  const [taskPdfUploading, setTaskPdfUploading] = useState(false);
   const [taskBusy, setTaskBusy] = useState(false);
   const [taskErr, setTaskErr] = useState('');
   const [editingTask, setEditingTask] = useState(null); // assignment object
@@ -91,6 +145,8 @@ export default function ClassManage() {
   /* Materi state */
   const [materials, setMaterials] = useState([]);
   const [matForm, setMatForm] = useState({ title: '', content: '' });
+  const [matPdfFile, setMatPdfFile] = useState(null);
+  const [matPdfUploading, setMatPdfUploading] = useState(false);
   const [matBusy, setMatBusy] = useState(false);
   const [matErr, setMatErr] = useState('');
   const [showMatForm, setShowMatForm] = useState(false);
@@ -120,9 +176,24 @@ export default function ClassManage() {
   const saveTask = async (e) => {
     e.preventDefault(); setTaskErr(''); setTaskBusy(true);
     try {
+      let finalDescription = taskForm.description || '';
+      if (taskPdfFile) {
+        setTaskPdfUploading(true);
+        const form = new FormData();
+        form.append('file', taskPdfFile);
+        const res = await fetch(`/api/classes/${classId}/materials/upload-pdf`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+          body: form,
+        });
+        const up = await res.json();
+        if (!res.ok) throw new Error(up.error || 'Upload lampiran soal PDF gagal');
+        finalDescription = (finalDescription ? finalDescription + '\n\n' : '') + `📄 [Lampiran PDF: ${up.name}](${up.url})`;
+      }
+
       const payload = {
         title: taskForm.title,
-        description: taskForm.description,
+        description: finalDescription,
         dueDate: taskForm.dueDate ? new Date(taskForm.dueDate).toISOString() : null,
       };
       if (editingTask) {
@@ -132,9 +203,9 @@ export default function ClassManage() {
         const created = await api(`/classes/${classId}/assignments`, { method: 'POST', body: payload });
         setAssignments((prev) => [created, ...prev]);
       }
-      setShowNewTask(false); setEditingTask(null); setTaskForm({ title: '', description: '', dueDate: '' });
+      setShowNewTask(false); setEditingTask(null); setTaskForm({ title: '', description: '', dueDate: '' }); setTaskPdfFile(null);
     } catch (err) { setTaskErr(err.message); }
-    finally { setTaskBusy(false); }
+    finally { setTaskBusy(false); setTaskPdfUploading(false); }
   };
 
   const deleteTask = async (asgId) => {
@@ -151,6 +222,7 @@ export default function ClassManage() {
       description: a.description || '',
       dueDate: a.dueDate ? new Date(a.dueDate).toISOString().slice(0, 16) : '',
     });
+    setTaskPdfFile(null);
     setShowNewTask(true);
   };
 
@@ -180,15 +252,52 @@ export default function ClassManage() {
     finally { setGradeBusy((b) => ({ ...b, [subId]: false })); }
   };
 
-  /* ── Materi ── */
+  /* ── Materi: create ── */
   const saveMaterial = async (e) => {
     e.preventDefault(); setMatErr(''); setMatBusy(true);
     try {
-      await api(`/classes/${classId}/materials`, { method: 'POST', body: { title: matForm.title, content: matForm.content } });
+      let pdfUrl = null;
+      let pdfName = null;
+      if (matPdfFile) {
+        setMatPdfUploading(true);
+        const form = new FormData();
+        form.append('file', matPdfFile);
+        const res = await fetch(`/api/classes/${classId}/materials/upload-pdf`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+          body: form,
+        });
+        const up = await res.json();
+        if (!res.ok) throw new Error(up.error || 'Upload PDF materi gagal');
+        pdfUrl = up.url;
+        pdfName = up.name;
+      }
+
+      await api(`/classes/${classId}/materials`, {
+        method: 'POST',
+        body: {
+          title: matForm.title.trim(),
+          content: matForm.content.trim(),
+          pdfUrl,
+          pdfName,
+        },
+      });
       await load();
-      setMatForm({ title: '', content: '' }); setShowMatForm(false);
+      setMatForm({ title: '', content: '' });
+      setMatPdfFile(null);
+      setShowMatForm(false);
     } catch (err) { setMatErr(err.message); }
-    finally { setMatBusy(false); }
+    finally { setMatBusy(false); setMatPdfUploading(false); }
+  };
+
+  const deleteMaterial = async (matId) => {
+    if (!window.confirm('Hapus materi ini? Paragraf dan sorotan mahasiswa akan ikut terhapus.')) return;
+    try {
+      await api(`/materials/${matId}`, { method: 'DELETE' });
+      setMaterials((prev) => prev.filter((m) => m.id !== matId));
+    } catch (e) {
+      alert(e.message || 'Gagal menghapus materi');
+    }
   };
 
   /* ── Shared ── */
@@ -292,6 +401,44 @@ export default function ClassManage() {
                       <input type="datetime-local" value={taskForm.dueDate} onChange={(e) => setTaskForm((f) => ({ ...f, dueDate: e.target.value }))}
                         className="w-full rounded-xl border border-[#E7E1EA] bg-[#FCFBFD] px-4 py-2.5 text-[13px] text-[#1E1C1E] outline-none focus:border-[#6B1224] focus:bg-white transition" />
                     </div>
+
+                    {/* Lampiran PDF Soal / Panduan Tugas */}
+                    <div>
+                      <label className="block text-[11px] font-bold uppercase tracking-wide text-[#938B99] mb-1.5">
+                        Lampiran File Soal / Panduan Tugas (PDF)
+                      </label>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <label className="inline-flex items-center gap-2 rounded-xl border border-[#E7E1EA] bg-[#FCFBFD] px-4 py-2.5 text-[12px] font-bold text-[#6B1224] hover:bg-[#F9E8EC] cursor-pointer transition">
+                          <FileIcon size={14} />
+                          <span>Pilih Dokumen PDF</span>
+                          <input
+                            type="file"
+                            accept="application/pdf"
+                            className="hidden"
+                            onChange={(e) => setTaskPdfFile(e.target.files?.[0] || null)}
+                          />
+                        </label>
+                        {taskPdfFile && (
+                          <div className="flex items-center gap-2 rounded-xl bg-[#F9E8EC] px-3 py-1.5 text-[11px] font-bold text-[#6B1224]">
+                            <span className="truncate max-w-[220px]">{taskPdfFile.name}</span>
+                            <span className="text-[10px] text-[#8B8391]">({(taskPdfFile.size / 1024).toFixed(0)} KB)</span>
+                            <button
+                              type="button"
+                              onClick={() => setTaskPdfFile(null)}
+                              className="ml-1 text-red-600 hover:text-red-800 font-extrabold cursor-pointer"
+                              title="Hapus file"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                      {taskPdfUploading && (
+                        <p className="mt-1.5 text-[11px] font-semibold text-[#6B1224] animate-pulse">
+                          Mengunggah lampiran PDF...
+                        </p>
+                      )}
+                    </div>
                     {taskErr && <p className="text-[11px] text-red-600 font-semibold">{taskErr}</p>}
                     <div className="flex gap-2 pt-1">
                       <button type="submit" disabled={taskBusy}
@@ -327,6 +474,24 @@ export default function ClassManage() {
                               <p className="text-[14px] font-extrabold text-[#1E1C1E] truncate">{a.title}</p>
                               {due && <p className="text-[11px] text-[#A79FAB] mt-0.5">Deadline: {due}</p>}
                               {a.description && <p className="text-[12px] text-[#6C6267] mt-1 line-clamp-2">{a.description}</p>}
+                              {(() => {
+                                const pdf = extractPdfFromDesc(a.description);
+                                if (!pdf) return null;
+                                return (
+                                  <div className="mt-2">
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setPreviewPdf({ url: pdf.url, name: pdf.name });
+                                      }}
+                                      className="inline-flex items-center gap-1.5 rounded-full bg-red-50 border border-red-200 px-3 py-1 text-[11px] font-bold text-red-700 hover:bg-red-100 cursor-pointer transition"
+                                    >
+                                      <FileIcon size={12} /> Lihat Lampiran PDF
+                                    </button>
+                                  </div>
+                                );
+                              })()}
                               <p className="text-[11px] text-[#A79FAB] mt-1.5">Dibuat: {fmtDate(a.createdAt)}</p>
                             </div>
                             <div className="flex items-center gap-1 shrink-0">
@@ -382,9 +547,57 @@ export default function ClassManage() {
                               <GradeBadge grade={s.grade} />
                             </div>
 
-                            {/* Isi jawaban */}
-                            <div className="rounded-xl bg-[#FCFBFD] border border-[#F1EEF4] px-4 py-3 mb-4">
-                              <p className="text-[12px] text-[#5B525C] leading-relaxed whitespace-pre-wrap">{s.content}</p>
+                            {/* Isi jawaban mahasiswa */}
+                            <div className="rounded-xl bg-[#FCFBFD] border border-[#F1EEF4] px-4 py-3.5 mb-4 space-y-2.5">
+                              {s.content ? (
+                                <div>
+                                  <p className="text-[10px] font-bold uppercase tracking-wide text-[#938B99] mb-1">Jawaban Teks</p>
+                                  <p className="text-[12px] text-[#1E1C1E] leading-relaxed whitespace-pre-wrap">{s.content}</p>
+                                </div>
+                              ) : null}
+
+                              {s.linkUrl && (
+                                <div>
+                                  <p className="text-[10px] font-bold uppercase tracking-wide text-[#938B99] mb-1">Tautan Drive / Cloud</p>
+                                  <a
+                                    href={s.linkUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1.5 rounded-lg bg-blue-50 border border-blue-200 px-3 py-1.5 text-[11px] font-bold text-blue-700 hover:bg-blue-100 transition no-underline"
+                                  >
+                                    <span>🔗 {s.linkUrl}</span> ↗
+                                  </a>
+                                </div>
+                              )}
+
+                              {s.fileUrl && (
+                                <div>
+                                  <p className="text-[10px] font-bold uppercase tracking-wide text-[#938B99] mb-1">File Dokumen yang Dikumpulkan</p>
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => setPreviewPdf({ url: s.fileUrl, name: `${s.user.name} — ${s.fileName || 'Jawaban Tugas.pdf'}` })}
+                                      className="inline-flex items-center gap-1.5 rounded-full bg-red-600 px-3.5 py-1.5 text-[11px] font-bold text-white hover:bg-red-700 transition cursor-pointer shadow-2xs"
+                                    >
+                                      <FileIcon size={12} />
+                                      <span>Lihat File PDF ({s.fileName || 'Dokumen'})</span>
+                                    </button>
+                                    <a
+                                      href={s.fileUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      download
+                                      className="inline-flex items-center gap-1 rounded-full border border-[#E7E1EA] bg-white px-3 py-1.5 text-[11px] font-bold text-[#6C6267] hover:border-[#6B1224] hover:text-[#6B1224] transition no-underline"
+                                    >
+                                      <span>Unduh File</span> ↗
+                                    </a>
+                                  </div>
+                                </div>
+                              )}
+
+                              {!s.content && !s.linkUrl && !s.fileUrl && (
+                                <p className="text-xs text-[#8B8391] italic">Tidak ada konten jawaban yang disertakan.</p>
+                              )}
                             </div>
 
                             {/* Form penilaian */}
@@ -439,26 +652,88 @@ export default function ClassManage() {
 
             {showMatForm && (
               <form onSubmit={saveMaterial} className="mb-5 rounded-[18px] border border-[#F1EEF4] bg-white p-5 space-y-4">
-                <h3 className="text-[13px] font-extrabold text-[#1E1C1E]">Materi Baru</h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-[13px] font-extrabold text-[#1E1C1E]">Materi Baru</h3>
+                  {matPdfFile && (
+                    <span className="rounded-full bg-red-50 border border-red-200 px-2.5 py-0.5 text-[10px] font-bold text-red-700">
+                      Mode Lampiran PDF
+                    </span>
+                  )}
+                </div>
+
+                {/* Upload PDF Materi */}
+                <div className="rounded-2xl border-2 border-dashed border-[#E7E1EA] bg-[#FCFBFD] p-4 text-center hover:border-[#6B1224] transition">
+                  <label className="cursor-pointer block">
+                    <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-600 mb-2">
+                      <FileIcon size={20} />
+                    </div>
+                    <p className="text-[12px] font-bold text-[#1E1C1E]">
+                      {matPdfFile ? matPdfFile.name : 'Unggah File PDF Materi Pengajar'}
+                    </p>
+                    <p className="text-[11px] text-[#8B8391] mt-0.5">
+                      {matPdfFile
+                        ? `Ukuran: ${(matPdfFile.size / 1024).toFixed(0)} KB · Klik untuk mengganti`
+                        : 'Pilih file PDF bahan ajar (slide, modul, handout, dll.) maks. 20 MB'}
+                    </p>
+                    <input
+                      type="file"
+                      accept="application/pdf"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setMatPdfFile(file);
+                          if (!matForm.title.trim()) {
+                            setMatForm((f) => ({ ...f, title: file.name.replace(/\.[^/.]+$/, '') }));
+                          }
+                        }
+                      }}
+                    />
+                  </label>
+                  {matPdfFile && (
+                    <button
+                      type="button"
+                      onClick={() => setMatPdfFile(null)}
+                      className="mt-2 text-[11px] font-bold text-red-600 hover:text-red-800 cursor-pointer"
+                    >
+                      ✕ Batalkan pilihan file PDF
+                    </button>
+                  )}
+                </div>
+
                 <div>
                   <label className="block text-[11px] font-bold uppercase tracking-wide text-[#938B99] mb-1.5">Judul Materi *</label>
                   <input type="text" required value={matForm.title} onChange={(e) => setMatForm((f) => ({ ...f, title: e.target.value }))}
                     placeholder="Contoh: Bab 1 — Pengantar Aljabar Linear"
                     className="w-full rounded-xl border border-[#E7E1EA] bg-[#FCFBFD] px-4 py-2.5 text-[13px] outline-none focus:border-[#6B1224] focus:bg-white transition" />
                 </div>
+
                 <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wide text-[#938B99] mb-1.5">Isi Materi * <span className="normal-case font-normal text-[#A79FAB]">(pisahkan paragraf dengan baris kosong)</span></label>
-                  <textarea rows={8} required value={matForm.content} onChange={(e) => setMatForm((f) => ({ ...f, content: e.target.value }))}
-                    placeholder="Tempel isi materi di sini..."
+                  <label className="block text-[11px] font-bold uppercase tracking-wide text-[#938B99] mb-1.5">
+                    {matPdfFile ? 'Isi Teks / Penjelasan Tambahan (Opsional)' : 'Isi Teks Materi *'}
+                    <span className="normal-case font-normal text-[#A79FAB]"> (pisahkan paragraf dengan baris kosong)</span>
+                  </label>
+                  <textarea rows={matPdfFile ? 4 : 8}
+                    required={!matPdfFile}
+                    value={matForm.content}
+                    onChange={(e) => setMatForm((f) => ({ ...f, content: e.target.value }))}
+                    placeholder={matPdfFile ? 'Tulis catatan pengantar atau ringkasan modul jika ada (opsional)...' : 'Tempel isi teks materi di sini...'}
                     className="w-full rounded-xl border border-[#E7E1EA] bg-[#FCFBFD] px-4 py-2.5 text-[13px] outline-none focus:border-[#6B1224] focus:bg-white transition resize-none" />
                 </div>
+
+                {matPdfUploading && (
+                  <p className="text-[11px] font-semibold text-[#6B1224] animate-pulse">
+                    Sedang mengunggah dokumen PDF...
+                  </p>
+                )}
                 {matErr && <p className="text-[11px] text-red-600 font-semibold">{matErr}</p>}
+
                 <div className="flex gap-2">
-                  <button type="submit" disabled={matBusy}
+                  <button type="submit" disabled={matBusy || matPdfUploading}
                     className="flex-1 rounded-full bg-[#6B1224] py-2.5 text-[12px] font-bold text-white hover:bg-[#80142A] disabled:opacity-40 cursor-pointer transition">
-                    {matBusy ? 'Menyimpan...' : 'Terbitkan Materi'}
+                    {matPdfUploading ? 'Mengunggah PDF...' : matBusy ? 'Menyimpan...' : 'Terbitkan Materi'}
                   </button>
-                  <button type="button" onClick={() => setShowMatForm(false)}
+                  <button type="button" onClick={() => { setShowMatForm(false); setMatPdfFile(null); }}
                     className="rounded-full border border-[#E7E1EA] px-5 py-2.5 text-[12px] font-bold text-[#8B8391] hover:bg-[#F5F4F7] cursor-pointer transition">
                     Batal
                   </button>
@@ -470,19 +745,53 @@ export default function ClassManage() {
               <div className="rounded-[18px] border border-dashed border-[#E7E1EA] bg-[#FCFBFD] px-6 py-12 text-center">
                 <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-[#F9E8EC] text-[#6B1224] text-xl mb-3">📄</div>
                 <p className="text-sm font-bold text-[#1E1C1E]">Belum ada materi</p>
+                <p className="text-xs text-[#8B8391] mt-1">Klik "Tambah Materi" untuk mengunggah PDF atau teks modul pembelajaran.</p>
               </div>
             ) : (
               <div className="space-y-3">
                 {materials.map((m) => (
-                  <div key={m.id} className="flex items-center gap-4 rounded-[16px] border border-[#F1EEF4] bg-white px-5 py-4">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#4F46E5] text-white"><FileIcon size={16} /></div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[13px] font-bold text-[#1E1C1E] truncate">{m.title}</p>
-                      <p className="text-[11px] text-[#A79FAB]">{fmtDate(m.createdAt)}</p>
+                  <div key={m.id} className="flex flex-wrap items-center justify-between gap-3 rounded-[16px] border border-[#F1EEF4] bg-white px-5 py-4 transition hover:shadow-xs">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white ${m.pdfUrl ? 'bg-red-500' : 'bg-[#4F46E5]'}`}>
+                        <FileIcon size={16} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-[13px] font-bold text-[#1E1C1E] truncate">{m.title}</p>
+                          {m.pdfUrl && (
+                            <span className="rounded-full bg-red-50 border border-red-200 px-2 py-0.5 text-[10px] font-extrabold text-red-700">
+                              PDF
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-[#A79FAB]">
+                          {m.pdfName ? `${m.pdfName} · ` : ''}{fmtDate(m.createdAt)}
+                        </p>
+                      </div>
                     </div>
-                    <Link to={`/materi/${m.id}`} className="shrink-0 inline-flex items-center gap-1.5 rounded-full border border-[#E7E1EA] bg-white px-3.5 py-1.5 text-[12px] font-bold text-[#1E1C1E] no-underline hover:border-[#6B1224] hover:text-[#6B1224] transition">
-                      Buka
-                    </Link>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      {m.pdfUrl && (
+                        <button
+                          type="button"
+                          onClick={() => setPreviewPdf({ url: m.pdfUrl, name: m.pdfName || m.title })}
+                          className="inline-flex items-center gap-1.5 rounded-full bg-red-600 px-3.5 py-1.5 text-[12px] font-bold text-white hover:bg-red-700 transition cursor-pointer shadow-2xs"
+                        >
+                          <FileIcon size={12} /> Lihat PDF
+                        </button>
+                      )}
+                      <Link to={`/materi/${m.id}`} className="inline-flex items-center gap-1.5 rounded-full border border-[#E7E1EA] bg-white px-3.5 py-1.5 text-[12px] font-bold text-[#1E1C1E] no-underline hover:border-[#6B1224] hover:text-[#6B1224] transition">
+                        Ruang Baca
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => deleteMaterial(m.id)}
+                        className="flex h-8 w-8 items-center justify-center rounded-full text-[#A79FAB] hover:bg-red-50 hover:text-red-600 cursor-pointer transition"
+                        title="Hapus Materi"
+                      >
+                        <TrashIcon size={14} />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -585,6 +894,14 @@ export default function ClassManage() {
           </div>
         )}
       </div>
+
+      {previewPdf && (
+        <PdfViewer
+          url={previewPdf.url}
+          name={previewPdf.name}
+          onClose={() => setPreviewPdf(null)}
+        />
+      )}
     </div>
   );
 }

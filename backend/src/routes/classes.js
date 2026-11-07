@@ -10,8 +10,8 @@ import sharedRouter from './shared.js';
 const r = Router();
 r.use(requireAuth);
 
-// Gunakan CSPRNG untuk menghasilkan kode kelas acak yang aman dan tidak dapat diprediksi
-const makeCode = () => crypto.randomBytes(4).toString('hex').slice(0, 6).toUpperCase();
+// Gunakan CSPRNG untuk menghasilkan kode kelas acak dengan prefix SP-
+const makeCode = () => 'SP-' + crypto.randomBytes(3).toString('hex').toUpperCase();
 
 // Batasi percobaan join kelas (maks 15 kali per 10 menit per mahasiswa) untuk mencegah tebak kode
 const joinLimiter = rateLimit({
@@ -43,7 +43,7 @@ r.post('/', requireRole('dosen'), async (req, res) => {
 r.post('/join', requireRole('mahasiswa'), joinLimiter, async (req, res) => {
   const p = z
     .object({
-      code: z.string().trim().min(4).max(12).regex(/^[A-Za-z0-9]+$/, 'Format kode tidak valid'),
+      code: z.string().trim().min(4).max(16).regex(/^[A-Za-z0-9_-]+$/, 'Format kode tidak valid'),
     })
     .safeParse(req.body);
   if (!p.success) return res.status(400).json({ error: 'Format kode kelas tidak valid' });
@@ -67,6 +67,81 @@ r.get('/', async (req, res) => {
       ? await prisma.class.findMany({ where: { ownerId: req.user.id }, include })
       : await prisma.class.findMany({ where: { enrollments: { some: { userId: req.user.id } } }, include });
   res.json(classes);
+});
+
+// GET semua tugas untuk mahasiswa (dari seluruh kelas yang diikuti)
+r.get('/student/assignments', requireRole('mahasiswa'), async (req, res) => {
+  const enrollments = await prisma.enrollment.findMany({
+    where: { userId: req.user.id },
+    select: { classId: true },
+  });
+  const classIds = enrollments.map((e) => e.classId);
+
+  const assignments = await prisma.assignment.findMany({
+    where: { classId: { in: classIds } },
+    orderBy: [
+      { dueDate: 'asc' },
+      { createdAt: 'desc' },
+    ],
+    include: {
+      class: {
+        select: { id: true, name: true, code: true, owner: { select: { id: true, name: true, email: true } } },
+      },
+      submissions: {
+        where: { userId: req.user.id },
+        select: {
+          id: true,
+          content: true,
+          linkUrl: true,
+          fileUrl: true,
+          fileName: true,
+          grade: true,
+          feedback: true,
+          submittedAt: true,
+          gradedAt: true,
+        },
+      },
+    },
+  });
+  res.json(assignments);
+});
+
+// GET /api/classes/mine/notifications — notifikasi: tugas baru dalam 7 hari terakhir
+r.get('/mine/notifications', requireRole('mahasiswa'), async (req, res) => {
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const enrollments = await prisma.enrollment.findMany({
+    where: { userId: req.user.id },
+    include: {
+      class: {
+        select: {
+          id: true,
+          name: true,
+          owner: { select: { name: true } },
+          assignments: {
+            where: { createdAt: { gte: sevenDaysAgo } },
+            orderBy: { createdAt: 'desc' },
+            select: { id: true, title: true, dueDate: true, createdAt: true },
+          },
+        },
+      },
+    },
+  });
+
+  const notifs = [];
+  for (const e of enrollments) {
+    for (const a of e.class.assignments) {
+      notifs.push({
+        type: 'new_assignment',
+        title: `Tugas baru dari ${e.class.owner.name}`,
+        body: `${a.title} — ${e.class.name}`,
+        classId: e.class.id,
+        assignmentId: a.id,
+        createdAt: a.createdAt,
+      });
+    }
+  }
+  notifs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  res.json(notifs);
 });
 
 // GET kelas tunggal by id (beserta owner, materi, assignment + submissions milik user, shared)
@@ -151,44 +226,6 @@ r.get('/mine/assignments', requireRole('mahasiswa'), async (req, res) => {
     return new Date(a.dueDate || '9999') - new Date(b.dueDate || '9999');
   });
   res.json(result);
-});
-
-// GET /api/classes/mine/notifications — notifikasi: tugas baru dalam 7 hari terakhir
-r.get('/mine/notifications', requireRole('mahasiswa'), async (req, res) => {
-  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-  const enrollments = await prisma.enrollment.findMany({
-    where: { userId: req.user.id },
-    include: {
-      class: {
-        select: {
-          id: true,
-          name: true,
-          owner: { select: { name: true } },
-          assignments: {
-            where: { createdAt: { gte: sevenDaysAgo } },
-            orderBy: { createdAt: 'desc' },
-            select: { id: true, title: true, dueDate: true, createdAt: true },
-          },
-        },
-      },
-    },
-  });
-
-  const notifs = [];
-  for (const e of enrollments) {
-    for (const a of e.class.assignments) {
-      notifs.push({
-        type: 'new_assignment',
-        title: `Tugas baru dari ${e.class.owner.name}`,
-        body: `${a.title} — ${e.class.name}`,
-        classId: e.class.id,
-        assignmentId: a.id,
-        createdAt: a.createdAt,
-      });
-    }
-  }
-  notifs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-  res.json(notifs);
 });
 
 // Mount sub-router assignments dan shared

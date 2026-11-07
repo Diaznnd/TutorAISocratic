@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../db.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
+import { handleUpload } from '../middleware/upload.js';
 
 const r = Router({ mergeParams: true }); // akses :classId dari parent
 r.use(requireAuth);
@@ -37,6 +38,53 @@ r.get('/', async (req, res) => {
     },
   });
   res.json(assignments);
+});
+
+/* ─── GET /api/classes/:classId/assignments/:id — detail tugas tunggal ─── */
+r.get('/:id', async (req, res) => {
+  const classId = Number(req.params.classId);
+  const id = Number(req.params.id);
+  if (!Number.isInteger(classId) || classId <= 0 || !Number.isInteger(id) || id <= 0)
+    return res.status(400).json({ error: 'ID tidak valid' });
+  if (!(await canAccess(req.user, classId)))
+    return res.status(403).json({ error: 'Akses ditolak' });
+
+  const assignment = await prisma.assignment.findUnique({
+    where: { id },
+    include: {
+      class: {
+        select: {
+          id: true,
+          name: true,
+          code: true,
+          owner: { select: { id: true, name: true, email: true } },
+        },
+      },
+      submissions:
+        req.user.role === 'mahasiswa'
+          ? {
+              where: { userId: req.user.id },
+              select: {
+                id: true,
+                content: true,
+                linkUrl: true,
+                fileUrl: true,
+                fileName: true,
+                grade: true,
+                feedback: true,
+                submittedAt: true,
+                gradedAt: true,
+              },
+            }
+          : {
+              include: { user: { select: { id: true, name: true, email: true } } },
+            },
+    },
+  });
+  if (!assignment || assignment.classId !== classId) {
+    return res.status(404).json({ error: 'Tugas tidak ditemukan' });
+  }
+  res.json(assignment);
 });
 
 /* ─── POST /api/classes/:classId/assignments — dosen buat tugas ─── */
@@ -116,32 +164,57 @@ r.get('/:id/submissions', requireRole('dosen'), async (req, res) => {
   res.json(submissions);
 });
 
+/* ─── POST /api/classes/:classId/assignments/:id/upload-pdf — mahasiswa upload PDF tugas ─── */
+r.post('/:id/upload-pdf', requireRole('mahasiswa'), handleUpload, async (req, res) => {
+  const classId = Number(req.params.classId);
+  const assignmentId = Number(req.params.id);
+  if (!Number.isInteger(classId) || classId <= 0 || !Number.isInteger(assignmentId) || assignmentId <= 0) {
+    return res.status(400).json({ error: 'ID tidak valid' });
+  }
+  if (!(await canAccess(req.user, classId))) return res.status(403).json({ error: 'Akses ditolak' });
+  if (!req.file) return res.status(400).json({ error: 'File PDF tidak ditemukan' });
+
+  const url = `/uploads/${req.file.filename}`;
+  res.json({ url, name: req.file.originalname, size: req.file.size });
+});
+
 /* ─── POST /api/classes/:classId/assignments/:id/submit — mahasiswa kumpul tugas ─── */
 r.post('/:id/submit', requireRole('mahasiswa'), async (req, res) => {
   const classId = Number(req.params.classId);
   const assignmentId = Number(req.params.id);
+  if (!Number.isInteger(classId) || classId <= 0 || !Number.isInteger(assignmentId) || assignmentId <= 0) {
+    return res.status(400).json({ error: 'ID tidak valid' });
+  }
   if (!(await canAccess(req.user, classId))) return res.status(403).json({ error: 'Akses ditolak' });
+
+  // Pastikan tugas ini benar ada dalam kelas
+  const assignment = await prisma.assignment.findFirst({
+    where: { id: assignmentId, classId },
+  });
+  if (!assignment) return res.status(404).json({ error: 'Tugas tidak ditemukan' });
 
   const p = z
     .object({
       content: z.string().trim().max(20000).default(''),
-      linkUrl: z.string().url().optional().nullable(),
+      linkUrl: z.string().url().optional().nullable().or(z.literal('')),
       fileUrl: z.string().max(500).optional().nullable(),
       fileName: z.string().trim().max(200).optional().nullable(),
     })
     .safeParse(req.body);
   if (!p.success) return res.status(400).json({ error: p.error.errors[0]?.message || 'Data tidak valid' });
 
+  const effectiveLink = p.data.linkUrl && p.data.linkUrl.trim() ? p.data.linkUrl.trim() : null;
+
   // Minimal satu dari tiga harus diisi
-  if (!p.data.content && !p.data.linkUrl && !p.data.fileUrl) {
-    return res.status(400).json({ error: 'Isi jawaban, link, atau file harus diisi' });
+  if (!p.data.content && !effectiveLink && !p.data.fileUrl) {
+    return res.status(400).json({ error: 'Isi jawaban teks, link dokumen, atau file PDF wajib diisi' });
   }
 
   const submission = await prisma.submission.upsert({
     where: { assignmentId_userId: { assignmentId, userId: req.user.id } },
     update: {
-      content: p.data.content,
-      linkUrl: p.data.linkUrl ?? null,
+      content: p.data.content || '',
+      linkUrl: effectiveLink,
       fileUrl: p.data.fileUrl ?? null,
       fileName: p.data.fileName ?? null,
       submittedAt: new Date(),
@@ -149,8 +222,8 @@ r.post('/:id/submit', requireRole('mahasiswa'), async (req, res) => {
     create: {
       assignmentId,
       userId: req.user.id,
-      content: p.data.content,
-      linkUrl: p.data.linkUrl ?? null,
+      content: p.data.content || '',
+      linkUrl: effectiveLink,
       fileUrl: p.data.fileUrl ?? null,
       fileName: p.data.fileName ?? null,
     },

@@ -19,7 +19,7 @@ r.post('/', highlightLimiter, async (req, res) => {
     .object({
       paragraphId: z.number().int().positive(),
       selectedText: z.string().trim().min(1).max(2000),
-      note: z.string().trim().max(500).optional(),
+      note: z.string().trim().max(10000).optional(),
     })
     .safeParse(req.body);
   if (!p.success) return res.status(400).json({ error: 'Data sorotan tidak valid' });
@@ -32,11 +32,8 @@ r.post('/', highlightLimiter, async (req, res) => {
   });
   if (!enrolled) return res.status(403).json({ error: 'Akses ditolak' });
 
-  // Keamanan: Validasi bahwa teks yang disorot benar-benar merupakan bagian dari paragraf materi
+  // Akses kelas sudah diverifikasi. Simpan sorotan teks materi/slide.
   const selected = p.data.selectedText;
-  if (!para.text.includes(selected)) {
-    return res.status(400).json({ error: 'Teks yang disorot tidak ditemukan di dalam paragraf materi ini' });
-  }
 
   // Cek apakah mahasiswa sudah pernah menyorot teks yang sama di paragraf ini (hindari duplikasi baris database)
   const existing = await prisma.highlight.findFirst({
@@ -62,6 +59,65 @@ r.post('/', highlightLimiter, async (req, res) => {
     },
   });
   res.status(201).json(h);
+});
+
+// GET /api/highlights/material/:materialId — ambil semua highlight milik user untuk materi ini
+r.get('/material/:materialId', async (req, res) => {
+  const materialId = Number(req.params.materialId);
+  if (!Number.isInteger(materialId) || materialId <= 0) {
+    return res.status(400).json({ error: 'ID materi tidak valid' });
+  }
+
+  const highlights = await prisma.highlight.findMany({
+    where: {
+      userId: req.user.id,
+      paragraph: { materialId },
+    },
+    orderBy: { createdAt: 'asc' },
+  });
+
+  res.json(highlights);
+});
+
+// PUT /api/highlights/:id — ubah catatan (note) milik user
+r.put('/:id', async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) {
+    return res.status(400).json({ error: 'ID tidak valid' });
+  }
+
+  const p = z.object({ note: z.string().trim().max(10000) }).safeParse(req.body);
+  if (!p.success) {
+    return res.status(400).json({ error: 'Format catatan tidak valid' });
+  }
+
+  const existing = await prisma.highlight.findUnique({ where: { id } });
+  if (!existing || existing.userId !== req.user.id) {
+    return res.status(404).json({ error: 'Sorotan tidak ditemukan' });
+  }
+
+  const updated = await prisma.highlight.update({
+    where: { id },
+    data: { note: p.data.note },
+  });
+
+  res.json(updated);
+});
+
+// DELETE /api/highlights/:id — hapus highlight milik user
+r.delete('/:id', async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) {
+    return res.status(400).json({ error: 'ID tidak valid' });
+  }
+
+  const existing = await prisma.highlight.findUnique({ where: { id } });
+  if (!existing || existing.userId !== req.user.id) {
+    return res.status(404).json({ error: 'Sorotan tidak ditemukan' });
+  }
+
+  await prisma.highlight.delete({ where: { id } });
+  res.json({ ok: true });
 });
 
 export default r;

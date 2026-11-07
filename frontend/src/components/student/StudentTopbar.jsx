@@ -29,12 +29,18 @@ export default function StudentTopbar({ query = '', onQueryChange }) {
   const [openNotif, setOpenNotif] = useState(false);
   const [notifs, setNotifs] = useState([]);
   const [notifLoading, setNotifLoading] = useState(false);
+  const [lastSeen, setLastSeen] = useState(() => Number(localStorage.getItem('lastSeenNotif') || 0));
   const menuRef = useRef(null);
   const notifRef = useRef(null);
 
-  // Hitung jumlah notifikasi yang belum dibaca (berdasarkan lastSeenNotif di localStorage)
-  const lastSeen = Number(localStorage.getItem('lastSeenNotif') || 0);
+  // Hitung jumlah notifikasi yang belum dibaca (berdasarkan lastSeenNotif di state & localStorage)
   const unreadCount = notifs.filter((n) => new Date(n.createdAt).getTime() > lastSeen).length;
+
+  const markAllRead = () => {
+    const now = Date.now();
+    localStorage.setItem('lastSeenNotif', String(now));
+    setLastSeen(now);
+  };
 
   const fetchNotifs = useCallback(async () => {
     setNotifLoading(true);
@@ -52,9 +58,9 @@ export default function StudentTopbar({ query = '', onQueryChange }) {
     if (!openNotif) {
       fetchNotifs();
       setOpenNotif(true);
+      // Ketika notifikasi dibuka untuk dilihat, langsung tandai sudah dibaca dan hilangkan dot merah
+      markAllRead();
     } else {
-      // Tandai semua sudah dibaca
-      localStorage.setItem('lastSeenNotif', String(Date.now()));
       setOpenNotif(false);
     }
   };
@@ -65,7 +71,7 @@ export default function StudentTopbar({ query = '', onQueryChange }) {
     const onDown = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target)) setOpenMenu(false);
       if (notifRef.current && !notifRef.current.contains(e.target)) {
-        localStorage.setItem('lastSeenNotif', String(Date.now()));
+        markAllRead();
         setOpenNotif(false);
       }
     };
@@ -124,9 +130,6 @@ export default function StudentTopbar({ query = '', onQueryChange }) {
                   {unreadCount > 9 ? '9+' : unreadCount}
                 </span>
               )}
-              {unreadCount === 0 && (
-                <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-[#D05A6E] ring-2 ring-white" />
-              )}
             </button>
 
             {openNotif && (
@@ -137,15 +140,31 @@ export default function StudentTopbar({ query = '', onQueryChange }) {
               >
                 {/* Header notifikasi */}
                 <div className="flex items-center justify-between border-b border-[#F5F4F7] px-4 py-3">
-                  <p className="text-[13px] font-extrabold text-[#1E1C1E]">Notifikasi</p>
-                  <button
-                    type="button"
-                    onClick={() => { localStorage.setItem('lastSeenNotif', String(Date.now())); setOpenNotif(false); }}
-                    className="flex h-7 w-7 items-center justify-center rounded-full text-[#A79FAB] hover:bg-[#F5F4F7] hover:text-[#6B1224] cursor-pointer transition"
-                    aria-label="Tutup"
-                  >
-                    <XIcon size={14} />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <p className="text-[13px] font-extrabold text-[#1E1C1E]">Notifikasi</p>
+                    {unreadCount > 0 && (
+                      <span className="rounded-full bg-[#D05A6E] px-2 py-0.5 text-[9px] font-extrabold text-white">
+                        {unreadCount} baru
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={markAllRead}
+                      className="text-[10px] font-bold text-[#6B1224] hover:underline cursor-pointer"
+                    >
+                      Tandai dibaca
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { markAllRead(); setOpenNotif(false); }}
+                      className="flex h-7 w-7 items-center justify-center rounded-full text-[#A79FAB] hover:bg-[#F5F4F7] hover:text-[#6B1224] cursor-pointer transition"
+                      aria-label="Tutup"
+                    >
+                      <XIcon size={14} />
+                    </button>
+                  </div>
                 </div>
 
                 {/* Isi */}
@@ -168,8 +187,8 @@ export default function StudentTopbar({ query = '', onQueryChange }) {
                         return (
                           <li key={i}>
                             <Link
-                              to={`/kelas/${n.classId}`}
-                              onClick={() => { localStorage.setItem('lastSeenNotif', String(Date.now())); setOpenNotif(false); }}
+                              to={n.assignmentId ? `/kelas/${n.classId}/tugas/${n.assignmentId}` : `/kelas/${n.classId}`}
+                              onClick={() => { markAllRead(); setOpenNotif(false); }}
                               className={[
                                 'flex items-start gap-3 px-4 py-3 no-underline transition hover:bg-[#FBF7F4]',
                                 isNew ? 'bg-[#FDF2F4]' : '',

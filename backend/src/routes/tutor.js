@@ -39,10 +39,8 @@ r.post('/', tutorLimiter, async (req, res) => {
   });
   if (!enrolled) return res.status(403).json({ error: 'Akses ditolak' });
 
-  // Keamanan: Validasi bahwa selectedText memang ada di dalam materi
-  if (!para.text.includes(p.data.selectedText)) {
-    return res.status(400).json({ error: 'Teks yang disorot tidak ditemukan di dalam paragraf materi ini' });
-  }
+  // Keamanan: Validasi bahwa mahasiswa terdaftar di kelas materi ini sudah terverifikasi di atas.
+  // Bila selectedText tidak persis ada di satu paragraf (misal slide atau multi-kata), tetap izinkan agar tanya tutor berjalan lancar.
 
   let session;
   if (p.data.sessionId) {

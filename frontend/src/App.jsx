@@ -7,6 +7,8 @@ import StudentHome from './pages/StudentHome.jsx';
 import ClassDetail from './pages/ClassDetail.jsx';
 import ClassManage from './pages/ClassManage.jsx';
 import Material from './pages/Material.jsx';
+import StudentAssignments from './pages/StudentAssignments.jsx';
+import AssignmentDetail from './pages/AssignmentDetail.jsx';
 
 /* ─── Top Navbar for Authenticated Pages (/app, /materi/:id) ─── */
 function AppNav() {
@@ -79,12 +81,12 @@ function AppGuard({ children }) {
   return children;
 }
 
-/* ─── Halaman /app: pelajar memakai dashboard baru, dosen tetap halaman kelola ─── */
+/* ─── Halaman /app: pelajar memakai dashboard mahasiswa, dosen memakai dashboard dosen ─── */
 function AppHome() {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
   if (user.role === 'mahasiswa') return <StudentHome />;
-  return <ProtectedLayout><Home /></ProtectedLayout>;
+  return <Home />;
 }
 
 /* ─── Root Router ─── */
@@ -112,9 +114,9 @@ export default function App() {
       <Route
         path="/materi/:id"
         element={
-          <ProtectedLayout>
+          <AppGuard>
             <Material />
-          </ProtectedLayout>
+          </AppGuard>
         }
       />
 
@@ -124,7 +126,19 @@ export default function App() {
         element={<AppGuard><ClassDetail /></AppGuard>}
       />
 
-      {/* 6. Kelola kelas (dosen) */}
+      {/* 5b. Halaman detail tugas spesifik mahasiswa */}
+      <Route
+        path="/kelas/:classId/tugas/:assignmentId"
+        element={<AppGuard><AssignmentDetail /></AppGuard>}
+      />
+
+      {/* 6. Daftar semua tugas mahasiswa */}
+      <Route
+        path="/tugas"
+        element={<AppGuard><StudentAssignments /></AppGuard>}
+      />
+
+      {/* 7. Kelola kelas (dosen) */}
       <Route
         path="/kelola/:id"
         element={<AppGuard><ClassManage /></AppGuard>}

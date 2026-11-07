@@ -321,15 +321,14 @@ function CarouselSection({ id, title, count, className = '', children }) {
 
 /* ─── Kartu kelas (bagian "Kelas yang baru diikuti") ─── */
 function CourseCard({ course, index, highlight }) {
-  const first = course.materials[0];
   const description =
     course.materials
       .slice(0, 2)
       .map((m) => m.title)
-      .join(' · ') || 'Modul akan tampil di sini setelah dosen menerbitkan materi pertama.';
+      .join(' · ') || 'Buka kelas untuk melihat materi dan tugas.';
 
   return (
-    <article className="group relative flex shrink-0 basis-[290px] snap-start flex-col overflow-hidden rounded-[22px] border border-[#F0EDF2] bg-white transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_24px_42px_-32px_rgba(30,28,30,0.55)] sm:basis-[340px] xl:basis-[calc((100%-1rem)/2)]">
+    <article className="group relative flex shrink-0 basis-[290px] snap-start flex-col overflow-hidden rounded-[22px] border border-[#F0EDF2] bg-white transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_24px_42px_-32px_rgba(30,28,30,0.55)] cursor-pointer sm:basis-[340px] xl:basis-[calc((100%-1rem)/2)]">
       <div className="relative m-3 mb-0">
         <CourseThumb variant={index} className="h-[150px] rounded-2xl" />
         <span className="absolute left-3 top-3 rounded-full bg-white/95 px-3 py-1 text-[10px] font-bold tracking-wide text-[#3A3340] shadow-sm">
@@ -353,18 +352,16 @@ function CourseCard({ course, index, highlight }) {
         <p className="mt-1.5 line-clamp-2 text-[12px] leading-relaxed text-[#8B8391]">{description}</p>
 
         <span className="mt-4 inline-flex items-center gap-1.5 text-[11px] font-bold text-[#6B1224]">
-          {first ? 'Buka kelas' : 'Menunggu materi dosen'}
-          {first && <ArrowRightIcon size={13} className="transition-transform group-hover:translate-x-0.5" />}
+          Buka kelas
+          <ArrowRightIcon size={13} className="transition-transform group-hover:translate-x-0.5" />
         </span>
       </div>
 
-      {first && (
-        <Link
-          to={`/kelas/${course.id}`}
-          className="absolute inset-0 z-10 rounded-[22px]"
-          aria-label={`Buka kelas ${course.name}`}
-        />
-      )}
+      <Link
+        to={`/kelas/${course.id}`}
+        className="absolute inset-0 z-10 rounded-[22px]"
+        aria-label={`Buka kelas ${course.name}`}
+      />
     </article>
   );
 }
@@ -375,7 +372,7 @@ function ActiveCard({ course, index }) {
   const done = course.total > 0 && course.read === course.total;
 
   return (
-    <article className="group relative flex shrink-0 basis-[275px] snap-start flex-col overflow-hidden rounded-[22px] border border-[#F0EDF2] bg-white transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_24px_42px_-32px_rgba(30,28,30,0.55)] sm:basis-[310px] lg:basis-[calc((100%-2rem)/3)]">
+    <article className="group relative flex shrink-0 basis-[275px] snap-start flex-col overflow-hidden rounded-[22px] border border-[#F0EDF2] bg-white transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_24px_42px_-32px_rgba(30,28,30,0.55)] cursor-pointer sm:basis-[310px] lg:basis-[calc((100%-2rem)/3)]">
       <div className="relative m-3 mb-0">
         <CourseThumb variant={index + 1} className="h-[128px] rounded-2xl" imgClass="w-[54%]" />
         <span
@@ -387,7 +384,7 @@ function ActiveCard({ course, index }) {
               <CheckIcon size={11} /> Selesai
             </>
           ) : course.total === 0 ? (
-            'Menunggu modul'
+            'Buka Kelas'
           ) : (
             `Modul ${String(course.read).padStart(2, '0')}/${String(course.total).padStart(2, '0')}`
           )}
@@ -413,13 +410,11 @@ function ActiveCard({ course, index }) {
         </div>
       </div>
 
-      {course.materials[0] && (
-        <Link
-          to={`/kelas/${course.id}`}
-          className="absolute inset-0 z-10 rounded-[22px]"
-          aria-label={`Lanjutkan kelas ${course.name}`}
-        />
-      )}
+      <Link
+        to={`/kelas/${course.id}`}
+        className="absolute inset-0 z-10 rounded-[22px]"
+        aria-label={`Buka detail kelas ${course.name}`}
+      />
     </article>
   );
 }
