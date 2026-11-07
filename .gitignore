@@ -2,3 +2,10 @@ node_modules
 dist
 .env
 *.db
+
+# SSL certificates — jangan commit ke repo
+nginx/ssl/
+
+# Docker volumes & override
+docker-compose.override.yml
+DEPLOYMENT.md

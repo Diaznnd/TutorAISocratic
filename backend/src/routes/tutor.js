@@ -57,13 +57,8 @@ r.post('/', tutorLimiter, async (req, res) => {
     });
   }
 
-  let messages = [];
-  try {
-    messages = JSON.parse(session.messages);
-    if (!Array.isArray(messages)) messages = [];
-  } catch {
-    messages = [];
-  }
+  // messages sudah berupa array native (kolom Json PostgreSQL)
+  let messages = Array.isArray(session.messages) ? session.messages : [];
 
   // Batasi panjang riwayat percakapan untuk mencegah pembengkakan token dan biaya LLM
   if (messages.length >= 30) {
@@ -102,7 +97,7 @@ r.post('/', tutorLimiter, async (req, res) => {
       messages.push({ role: 'assistant', content: full });
       await prisma.tutorSession.update({
         where: { id: session.id },
-        data: { messages: JSON.stringify(messages), hintLevel },
+        data: { messages, hintLevel },
       });
     }
     if (!isAborted) send({ type: 'done' });
