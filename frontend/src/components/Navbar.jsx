@@ -13,7 +13,7 @@ export default function Navbar() {
             SP
           </div>
           <div className="flex flex-col">
-            <span className="font-extrabold text-base tracking-tight text-[#6B1224] font-['Syne',sans-serif] leading-tight">
+            <span className="font-extrabold text-base tracking-tight text-[#6B1224] font-['Plus_Jakarta_Sans',sans-serif] leading-tight">
               SorotPaham
             </span>
             <span className="text-[10px] text-[#6C6267] font-semibold tracking-wider uppercase">

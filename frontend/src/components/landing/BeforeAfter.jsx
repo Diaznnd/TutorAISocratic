@@ -6,7 +6,7 @@ export default function BeforeAfter() {
           <span className="text-xs font-bold uppercase tracking-wider text-[#D05A6E] bg-[#F9E8EC] px-3 py-1 rounded-full">
             Dilema AI Saat Ini
           </span>
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-[#1E1C1E] font-['Syne',sans-serif] mt-3 mb-3">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-[#1E1C1E] font-['Plus_Jakarta_Sans',sans-serif] mt-3 mb-3">
             Mengapa Chatbot Konvensional Justru Melemahkan Pemahaman?
           </h2>
           <p className="text-sm sm:text-base text-[#6C6267] leading-relaxed">
@@ -21,7 +21,7 @@ export default function BeforeAfter() {
               <span className="w-7 h-7 rounded-full bg-red-100 text-red-700 flex items-center justify-center font-bold text-sm">
                 ✕
               </span>
-              <h3 className="text-base sm:text-lg font-bold text-red-950 font-['Syne',sans-serif] m-0">
+              <h3 className="text-base sm:text-lg font-bold text-red-950 font-['Plus_Jakarta_Sans',sans-serif] m-0">
                 Cara Lama (Chatbot Konvensional)
               </h3>
             </div>
@@ -56,7 +56,7 @@ export default function BeforeAfter() {
               <span className="w-7 h-7 rounded-full bg-[#F9E8EC] text-[#6B1224] flex items-center justify-center font-bold text-sm">
                 ✓
               </span>
-              <h3 className="text-base sm:text-lg font-bold text-[#6B1224] font-['Syne',sans-serif] m-0">
+              <h3 className="text-base sm:text-lg font-bold text-[#6B1224] font-['Plus_Jakarta_Sans',sans-serif] m-0">
                 Dengan SorotPaham (Socratic Tutor)
               </h3>
             </div>

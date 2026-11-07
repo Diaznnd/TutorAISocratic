@@ -12,7 +12,7 @@ export default function CtaBanner() {
           <span className="text-xs font-bold uppercase tracking-wider text-[#F9E8EC] bg-white/10 px-3.5 py-1.5 rounded-full inline-block mb-4">
             Mulai Belajar Cerdas
           </span>
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold font-['Syne',sans-serif] mb-4 leading-tight">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold font-['Plus_Jakarta_Sans',sans-serif] mb-4 leading-tight">
             Ubah Cara Belajarmu dari Sekadar Menghafal Menjadi Memahami
           </h2>
           <p className="text-sm sm:text-base text-white/80 leading-relaxed mb-8">

@@ -9,7 +9,7 @@ export default function Footer() {
             SP
           </div>
           <div>
-            <span className="font-bold text-sm text-[#6B1224] font-['Syne',sans-serif]">
+            <span className="font-bold text-sm text-[#6B1224] font-['Plus_Jakarta_Sans',sans-serif]">
               SorotPaham
             </span>
             <p className="text-xs text-[#6C6267] m-0">
