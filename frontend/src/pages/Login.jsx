@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth.jsx';
 
 /* ─── 3D Tactile Illustration Panel (Pure SVG & Tailwind) ─── */
