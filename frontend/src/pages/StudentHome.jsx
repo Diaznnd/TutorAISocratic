@@ -360,7 +360,7 @@ function CourseCard({ course, index, highlight }) {
 
       {first && (
         <Link
-          to={`/materi/${first.id}`}
+          to={`/kelas/${course.id}`}
           className="absolute inset-0 z-10 rounded-[22px]"
           aria-label={`Buka kelas ${course.name}`}
         />
@@ -415,7 +415,7 @@ function ActiveCard({ course, index }) {
 
       {course.materials[0] && (
         <Link
-          to={`/materi/${course.materials[0].id}`}
+          to={`/kelas/${course.id}`}
           className="absolute inset-0 z-10 rounded-[22px]"
           aria-label={`Lanjutkan kelas ${course.name}`}
         />

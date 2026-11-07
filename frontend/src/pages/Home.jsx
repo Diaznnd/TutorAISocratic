@@ -130,6 +130,14 @@ export default function Home() {
                 <span className="text-xs font-semibold text-[#6C6267] bg-white px-3 py-1 rounded-full border border-[#E5D5D8]">
                   {c.materials.length} Bahan Ajar
                 </span>
+                {isDosen && (
+                  <Link
+                    to={`/kelola/${c.id}`}
+                    className="inline-flex items-center gap-1.5 text-xs font-bold px-4 py-1.5 rounded-full bg-[#6B1224] text-white hover:bg-[#80142A] no-underline transition-all"
+                  >
+                    Kelola Kelas →
+                  </Link>
+                )}
               </div>
 
               {/* Material Items */}

@@ -1,16 +1,25 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../auth.jsx';
-import { BookIcon, GearIcon, HomeIcon, LogOutIcon, PlusIcon } from './Icons.jsx';
+import { BookIcon, ClipboardIcon, GearIcon, HomeIcon, LogOutIcon, PlusIcon } from './Icons.jsx';
 
 /* Sidebar khusus area pelajar: navigasi utama, aksi gabung kelas, dan panel akun. */
 export default function StudentSidebar({ activeSection = 'beranda', onNavigate, onJoin }) {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [openAccount, setOpenAccount] = useState(false);
 
   const items = [
     { key: 'beranda', label: 'Beranda', Icon: HomeIcon },
     { key: 'kelas', label: 'Kelas Saya', Icon: BookIcon },
+    { key: 'tugas', label: 'Tugas Saya', Icon: ClipboardIcon },
   ];
+
+  const handleNav = (key) => {
+    if (key === 'tugas') { navigate('/tugas'); return; }
+    if (key === 'beranda') { navigate('/app'); return; }
+    onNavigate?.(key);
+  };
 
   return (
     <aside className="sticky top-0 hidden h-screen w-[268px] shrink-0 flex-col justify-between border-r border-[#F1EEF4] bg-white px-5 py-7 lg:flex xl:w-[292px] xl:px-6 xl:py-8">
@@ -33,7 +42,7 @@ export default function StudentSidebar({ activeSection = 'beranda', onNavigate, 
               <button
                 key={key}
                 type="button"
-                onClick={() => onNavigate?.(key)}
+                onClick={() => handleNav(key)}
                 aria-current={active ? 'page' : undefined}
                 className={[
                   'flex w-full items-center gap-3 rounded-[14px] px-4 py-3 text-[13px] font-bold transition-colors cursor-pointer text-left',

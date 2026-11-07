@@ -1,4 +1,6 @@
 import 'dotenv/config';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import express from 'express';
 import cors from 'cors';
 import { securityHeaders } from './middleware/securityHeaders.js';
@@ -8,6 +10,8 @@ import classes from './routes/classes.js';
 import materials from './routes/materials.js';
 import highlights from './routes/highlights.js';
 import tutor from './routes/tutor.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 16) {
   console.error('JWT_SECRET belum diisi atau terlalu pendek (minimal 16 karakter). Salin .env.example menjadi .env lalu isi.');
@@ -32,6 +36,9 @@ app.use('/api/classes', classes);
 app.use('/api', materials);
 app.use('/api/highlights', highlights);
 app.use('/api/tutor', tutor);
+
+// Sajikan file upload sebagai static
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 app.use((err, _req, res, _next) => {
   console.error(err);

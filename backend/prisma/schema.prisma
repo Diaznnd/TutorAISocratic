@@ -18,16 +18,19 @@ model User {
   enrollments  Enrollment[]
   highlights   Highlight[]
   sessions     TutorSession[]
+  submissions  Submission[]
 }
 
 model Class {
-  id          Int          @id @default(autoincrement())
-  name        String
-  code        String       @unique
-  ownerId     Int
-  owner       User         @relation(fields: [ownerId], references: [id])
-  enrollments Enrollment[]
-  materials   Material[]
+  id              Int              @id @default(autoincrement())
+  name            String
+  code            String           @unique
+  ownerId         Int
+  owner           User             @relation(fields: [ownerId], references: [id])
+  enrollments     Enrollment[]
+  materials       Material[]
+  assignments     Assignment[]
+  sharedMaterials SharedMaterial[]
 }
 
 model Enrollment {
@@ -44,9 +47,51 @@ model Material {
   id         Int         @id @default(autoincrement())
   classId    Int
   title      String
+  pdfUrl     String?     // path file PDF materi (opsional)
+  pdfName    String?     // nama asli file PDF
   createdAt  DateTime    @default(now())
   class      Class       @relation(fields: [classId], references: [id])
   paragraphs Paragraph[]
+}
+
+model Assignment {
+  id          Int          @id @default(autoincrement())
+  classId     Int
+  title       String
+  description String       @default("")
+  dueDate     DateTime?
+  createdAt   DateTime     @default(now())
+  class       Class        @relation(fields: [classId], references: [id], onDelete: Cascade)
+  submissions Submission[]
+}
+
+model Submission {
+  id           Int        @id @default(autoincrement())
+  assignmentId Int
+  userId       Int
+  content      String     @default("")
+  linkUrl      String?    // link Google Drive / OneDrive
+  fileUrl      String?    // path file PDF yang diupload
+  fileName     String?    // nama asli file
+  grade        Int?       // 0-100
+  feedback     String?
+  submittedAt  DateTime   @default(now())
+  gradedAt     DateTime?
+  assignment   Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  user         User       @relation(fields: [userId], references: [id])
+
+  @@unique([assignmentId, userId])
+}
+
+model SharedMaterial {
+  id        Int      @id @default(autoincrement())
+  classId   Int
+  title     String
+  fileUrl   String   // URL atau nama file relatif
+  fileName  String
+  fileType  String   @default("application/pdf")
+  createdAt DateTime @default(now())
+  class     Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
 }
 
 model Paragraph {
