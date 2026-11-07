@@ -13,8 +13,8 @@ services:
       - db_data:/var/lib/postgresql/data
     # Port tidak di-expose ke host — hanya accessible dari container lain
     # Uncomment untuk debugging lokal:
-    # ports:
-    #   - "5432:5432"
+    ports:
+       - "5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-sorotpaham} -d ${POSTGRES_DB:-sorotpaham}"]
       interval: 10s
