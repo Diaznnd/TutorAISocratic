@@ -26,4 +26,6 @@ COPY src ./src
 EXPOSE 4000
 
 # Jalankan migration lalu start server
-CMD ["sh", "-c", "npx prisma migrate deploy && node src/index.js"]
+# DATABASE_URL di-pass eksplisit agar prisma CLI membacanya dari env var Docker,
+# bukan mencari file .env yang tidak ada di dalam image
+CMD ["sh", "-c", "DATABASE_URL=$DATABASE_URL npx prisma migrate deploy && node src/index.js"]
