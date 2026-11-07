@@ -8,3 +8,4 @@ nginx/ssl/
 
 # Docker volumes & override
 docker-compose.override.yml
+DEPLOYMENT.md
