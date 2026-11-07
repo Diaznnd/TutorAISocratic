@@ -1,0 +1,73 @@
+services:
+
+  # ── PostgreSQL Database ──────────────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    container_name: sorotpaham-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-sorotpaham}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?err_db_password_required}
+      POSTGRES_DB: ${POSTGRES_DB:-sorotpaham}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    # Port tidak di-expose ke host — hanya accessible dari container lain
+    # Uncomment untuk debugging lokal:
+    # ports:
+    #   - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-sorotpaham} -d ${POSTGRES_DB:-sorotpaham}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Backend (Node.js + Express) ───────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: sorotpaham-backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-sorotpaham}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-sorotpaham}
+      JWT_SECRET: ${JWT_SECRET:?err_jwt_secret_required}
+      CLIENT_ORIGIN: ${CLIENT_ORIGIN:-http://localhost}
+      NINEROUTER_BASE_URL: ${NINEROUTER_BASE_URL:-http://43.134.64.120:20128/v1}
+      NINEROUTER_API_KEY: ${NINEROUTER_API_KEY:-dummy}
+      LLM_MODEL: ${LLM_MODEL:-auto}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:4000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ── Frontend (React + Vite build, served by Nginx) ────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: sorotpaham-frontend
+    restart: unless-stopped
+
+  # ── Nginx Reverse Proxy ───────────────────────────────────────────────────────
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: sorotpaham-nginx
+    restart: unless-stopped
+    depends_on:
+      - backend
+      - frontend
+    ports:
+      - "80:80"
+    volumes:
+      # Mount langsung sebagai default.conf — menggantikan bawaan Nginx
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+
+volumes:
+  db_data:
+    name: sorotpaham-db-data

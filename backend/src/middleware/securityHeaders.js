@@ -6,13 +6,27 @@ export function securityHeaders() {
     res.setHeader('X-Frame-Options', 'DENY');
     // Mematikan audit XSS browser lama yang problematik
     res.setHeader('X-XSS-Protection', '0');
-    // HSTS (HTTP Strict Transport Security)
+    // HSTS (HTTP Strict Transport Security) — aktif setelah SSL terpasang
     res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
     // Batasi pengiriman referrer
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
     // Batasi fitur peramban yang tidak dibutuhkan
     res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+    // Content-Security-Policy — lapisan pertahanan XSS
+    res.setHeader(
+      'Content-Security-Policy',
+      [
+        "default-src 'self'",
+        "script-src 'self'",
+        "style-src 'self' 'unsafe-inline'", // 'unsafe-inline' dibutuhkan untuk inline style (heat map paragraf)
+        "img-src 'self' data:",
+        "font-src 'self'",
+        "connect-src 'self'",             // SSE tutor berjalan ke origin yang sama
+        "frame-ancestors 'none'",
+        "base-uri 'self'",
+        "form-action 'self'",
+      ].join('; ')
+    );
     next();
   };
 }
-
