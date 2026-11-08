@@ -79,3 +79,46 @@ export async function* streamChat({ system, messages }) {
     }
   }
 }
+
+/**
+ * Non-streaming completion call to 9router.
+ * Digunakan untuk analisis analitik pedagogis, rekomendasi AI, dan evaluasi terstruktur.
+ */
+export async function generateChat({ system, messages, maxTokens = 1200 }) {
+  if (!isConfigured) {
+    return null;
+  }
+
+  try {
+    const body = JSON.stringify({
+      model: LLM_MODEL,
+      max_tokens: maxTokens,
+      stream: false,
+      messages: [
+        { role: 'system', content: system },
+        ...messages,
+      ],
+    });
+
+    const res = await fetch(`${NINEROUTER_BASE_URL}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${NINEROUTER_API_KEY}`,
+      },
+      body,
+    });
+
+    if (!res.ok) {
+      const errText = await res.text().catch(() => res.statusText);
+      console.warn(`9router error ${res.status}: ${errText}`);
+      return null;
+    }
+
+    const json = await res.json();
+    return json.choices?.[0]?.message?.content || null;
+  } catch (err) {
+    console.warn('generateChat failed:', err.message);
+    return null;
+  }
+}

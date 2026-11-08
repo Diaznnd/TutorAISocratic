@@ -257,7 +257,7 @@ export default function StudentTopbar({ query = '', onQueryChange }) {
                   <p className="truncate text-xs font-bold text-[#1E1C1E]">{user?.name}</p>
                   <p className="mt-0.5 truncate text-[11px] text-[#8B8391]">{user?.email}</p>
                   <p className="mt-2 inline-flex rounded-full bg-white px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#6B1224]">
-                    Pelajar / Mahasiswa
+                    {user?.role === 'dosen' ? 'Dosen / Pengajar' : 'Pelajar / Mahasiswa'}
                   </p>
                 </div>
                 <button

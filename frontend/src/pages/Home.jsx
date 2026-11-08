@@ -63,7 +63,7 @@ export default function Home() {
         <StudentSidebar
           activeSection="beranda"
           onJoin={() => setShowCreateModal(true)}
-          onAnalytics={() => setShowAnalytics(true)}
+          onAnalytics={() => navigate('/analitik')}
         />
 
         {/* Kolom Konten Utama */}

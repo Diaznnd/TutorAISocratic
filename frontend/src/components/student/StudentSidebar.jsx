@@ -67,7 +67,7 @@ export default function StudentSidebar({ activeSection = 'beranda', onNavigate, 
       if (onAnalytics) {
         onAnalytics();
       } else {
-        onNavigate?.('analitik');
+        navigate('/analitik');
       }
       return;
     }

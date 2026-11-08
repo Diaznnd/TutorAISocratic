@@ -9,6 +9,8 @@ import ClassManage from './pages/ClassManage.jsx';
 import Material from './pages/Material.jsx';
 import StudentAssignments from './pages/StudentAssignments.jsx';
 import AssignmentDetail from './pages/AssignmentDetail.jsx';
+import LecturerAnalytics from './pages/LecturerAnalytics.jsx';
+import LecturerClassDetailedAnalytics from './pages/LecturerClassDetailedAnalytics.jsx';
 
 /* ─── Top Navbar for Authenticated Pages (/app, /materi/:id) ─── */
 function AppNav() {
@@ -142,6 +144,18 @@ export default function App() {
       <Route
         path="/kelola/:id"
         element={<AppGuard><ClassManage /></AppGuard>}
+      />
+
+      {/* 8. Laporan analitik kelas (dosen) */}
+      <Route
+        path="/analitik"
+        element={<AppGuard><LecturerAnalytics /></AppGuard>}
+      />
+
+      {/* 8b. Laporan analitik lengkap per kelas (dosen) */}
+      <Route
+        path="/analitik/:classId"
+        element={<AppGuard><LecturerClassDetailedAnalytics /></AppGuard>}
       />
 
       {/* Fallback */}

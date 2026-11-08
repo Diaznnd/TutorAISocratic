@@ -19,6 +19,7 @@ model User {
   highlights   Highlight[]
   sessions     TutorSession[]
   submissions  Submission[]
+  preTests     PreTest[]
 }
 
 model Class {
@@ -128,4 +129,19 @@ model TutorSession {
   createdAt    DateTime  @default(now())
   user         User      @relation(fields: [userId], references: [id])
   paragraph    Paragraph @relation(fields: [paragraphId], references: [id], onDelete: Cascade)
+}
+
+model PreTest {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  classId    Int
+  materialId Int?
+  messages   Json     @default("[]") // [{role, content, isCorrect}]
+  score      Float? // persentase jawaban benar
+  totalQA    Int      @default(0) // total pertanyaan dijawab
+  correctQA  Int      @default(0) // jumlah benar
+  status     String   @default("ongoing") // "ongoing" | "completed"
+  createdAt  DateTime @default(now())
+  completedAt DateTime?
+  user       User     @relation(fields: [userId], references: [id])
 }

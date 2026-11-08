@@ -18,6 +18,7 @@ import {
   CreatedSuccessModal,
   AnalyticsModal,
 } from '../components/ClassModals.jsx';
+import { PreTestModal } from '../components/PreTestModal.jsx';
 
 /* ─── Ikon Lokal & Pembantu ─── */
 function DocIcon({ size = 18, className = '' }) {
@@ -187,6 +188,15 @@ function GraduationCapIcon({ size = 18, className = '' }) {
     <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className={className}>
       <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
       <path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5" />
+    </svg>
+  );
+}
+
+function ClockIcon({ size = 18, className = '' }) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <circle cx="12" cy="12" r="10" />
+      <polyline points="12 6 12 12 16 14" />
     </svg>
   );
 }
@@ -497,6 +507,8 @@ export default function ClassDetail() {
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [showUploadMenu, setShowUploadMenu] = useState(false);
   const [uploadingPdf, setUploadingPdf] = useState(false);
+  const [showPreTestModal, setShowPreTestModal] = useState(false);
+  const [showPreTestMenu, setShowPreTestMenu] = useState(false);
 
   const showToast = (msg) => {
     setToastMsg(msg);
@@ -981,6 +993,61 @@ export default function ClassDetail() {
                         <SyncIcon size={14} className={syncing ? 'animate-spin' : ''} />
                         <span>Sinkronisasi</span>
                       </button>
+
+                      {/* Tombol Pre-Test dengan dropdown - Hanya untuk mahasiswa */}
+                      {user?.role === 'mahasiswa' && (
+                        <div className="relative">
+                          <button
+                            type="button"
+                            onClick={() => setShowPreTestMenu((v) => !v)}
+                            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-purple-600 to-purple-700 px-4 py-2 text-xs font-bold text-white shadow-xs hover:from-purple-700 hover:to-purple-800 transition cursor-pointer"
+                          >
+                            <span>🎯 Pre-Test</span>
+                            <ChevronDownIcon size={12} className={`transition-transform duration-200 ${showPreTestMenu ? 'rotate-180' : ''}`} />
+                          </button>
+
+                          {showPreTestMenu && (
+                            <div className="absolute left-0 top-full mt-1.5 z-40 w-64 rounded-2xl border border-[#F1EEF4] bg-white p-2 shadow-xl animate-in fade-in">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  console.log('Button History clicked');
+                                  console.log('User:', user);
+                                  console.log('User role:', user?.role);
+                                  setShowPreTestMenu(false);
+                                  setShowPreTestModal(true);
+                                  console.log('showPreTestModal set to true');
+                                }}
+                                className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-xs font-bold text-[#1E1C1E] hover:bg-[#F3E5FF] hover:text-purple-700 transition cursor-pointer"
+                              >
+                                <ClockIcon size={16} className="text-purple-600" />
+                                <div className="flex-1">
+                                  <div className="font-extrabold">History Pre-Test</div>
+                                  <div className="text-[10px] text-[#8B8391] font-normal mt-0.5">Lihat hasil pre-test sebelumnya</div>
+                                </div>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  console.log('Button Mulai clicked');
+                                  console.log('User:', user);
+                                  console.log('User role:', user?.role);
+                                  setShowPreTestMenu(false);
+                                  setShowPreTestModal(true);
+                                  console.log('showPreTestModal set to true');
+                                }}
+                                className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-xs font-bold text-[#1E1C1E] hover:bg-[#F3E5FF] hover:text-purple-700 transition cursor-pointer"
+                              >
+                                <GraduationCapIcon size={16} className="text-purple-600" />
+                                <div className="flex-1">
+                                  <div className="font-extrabold">Mulai Pre-Test Baru</div>
+                                  <div className="text-[10px] text-[#8B8391] font-normal mt-0.5">Pilih materi untuk pre-test</div>
+                                </div>
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     {/* Mode Tampilan List / Grid & Info */}
@@ -1389,6 +1456,16 @@ export default function ClassDetail() {
         onClose={() => setShowAnalytics(false)}
         classes={cls ? [cls] : []}
       />
+
+      {/* Modal Pre-Test */}
+      {showPreTestModal && user?.role === 'mahasiswa' && (
+        <PreTestModal
+          isOpen={showPreTestModal}
+          onClose={() => setShowPreTestModal(false)}
+          classId={parseInt(id)}
+          materials={cls?.materials || []}
+        />
+      )}
 
       {/* Toast Alert */}
       {toastMsg && (
